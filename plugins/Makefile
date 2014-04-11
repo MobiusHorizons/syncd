@@ -1,4 +1,5 @@
-CC:=clang
+all: libsyncfs.so
+libsyncfs.so : syncfs.c
 
 %.o: %.c
 	$(CC) -fPIC -c $(CFLAGS) $(CPPFLAGS) $< -o $@

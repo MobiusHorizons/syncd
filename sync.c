@@ -4,11 +4,33 @@
 #include <dirent.h>
 #include <dlfcn.h>
 #include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+
 
 /*typedef struct {
 	
 } listenerQueue;
 int addListener(listenerQueue lq,functionPointer);*/
+
+int cb(char * path, int mask){
+	printf("file %s changed, mask was %.4x\n",path,mask);
+}
+
+typedef struct{
+	void * fun;
+	void * args;
+} args_t;
+
+void runner(void* ptr){
+	args_t* args = (args_t * ) ptr;
+	if (args->fun){
+		void (*loader)( int(*)(char*,int)) = args->fun;
+		int (*arg)(char*,int) = args->args;
+		loader(arg);
+	}
+		
+}
 
 int loadPlugins(void ***return_plugins){
 	void ** plugins = NULL;
@@ -52,10 +74,19 @@ void unloadPlugins(void **plugins, int num){
 int main(int argc, char** argv){
 	void ** plugins;
 	int i;
+	pthread_t t;
+	args_t args;
 	int num_plugins = loadPlugins(&plugins);
 	for ( i = 0; i < num_plugins; i++){
 		void (*init)() = dlsym(plugins[i],"init");
 		init();
+		void (*watch_dir)(const char * ) = dlsym(plugins[i],"watch_dir");
+		args.fun = dlsym(plugins[i],"listen");
+		watch_dir("/home/paul/Documents");
+		args.args = cb;
+		pthread_create(&t,NULL,(void*) &runner,(void*)&args);
+		watch_dir("/home/paul/Pictures");
 	}
+	pthread_join(t,NULL);
 	unloadPlugins(plugins,num_plugins);
 }
