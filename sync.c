@@ -72,21 +72,32 @@ void unloadPlugins(void **plugins, int num){
 }
 
 int main(int argc, char** argv){
+	char *testDir1 = calloc(1, 256); //allocate 1 chunk of 256 bytes, 0-initialized
+	strcat(testDir1, getenv("HOME"));
+	strcat(testDir1, "/Documents");
+
+	char *testDir2 = calloc(1, 256); //allocate 1 chunk of 256 bytes, 0-initialized
+	strcat(testDir2, getenv("HOME"));
+	strcat(testDir2, "/Pictures");
+
 	void ** plugins;
-	int i;
 	pthread_t t;
 	args_t args;
 	int num_plugins = loadPlugins(&plugins);
+	int i;
 	for ( i = 0; i < num_plugins; i++){
 		void (*init)() = dlsym(plugins[i],"init");
 		init();
 		void (*watch_dir)(const char * ) = dlsym(plugins[i],"watch_dir");
 		args.fun = dlsym(plugins[i],"listen");
-		watch_dir("/home/paul/Documents");
+		watch_dir(testDir1);
 		args.args = cb;
 		pthread_create(&t,NULL,(void*) &runner,(void*)&args);
-		watch_dir("/home/paul/Pictures");
+		watch_dir(testDir2);
 	}
 	pthread_join(t,NULL);
 	unloadPlugins(plugins,num_plugins);
+
+	free(testDir1);
+	free(testDir2);
 }
