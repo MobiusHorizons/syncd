@@ -1,3 +1,4 @@
+CFLAGS := -g 
 all: libsyncfs.so
 libsyncfs.so : syncfs.c
 
