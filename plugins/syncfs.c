@@ -9,9 +9,12 @@
 /* limits.h defines "PATH_MAX". */
 #include <limits.h>
 #include <sys/inotify.h>
+#include <sys/stat.h>
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define EVENT_BUF_LEN	(1024 * (EVENT_SIZE + 16))
+FILE ** open_files;
+int num_open_files;
 static int inotify_fd;
 static char* watchpoints[255]; // should use dynamic memory, but oh well
 static int num_watchpoints;
@@ -23,6 +26,7 @@ void listen(int(*)(char*,int));
 
 void init(){
 	num_watchpoints = 0;
+	num_open_files = 0;
 	inotify_fd = inotify_init();
 	if (inotify_fd < 0){
 		perror("inotify_init");
@@ -45,8 +49,10 @@ void listen(int (*cb)( char*,int)){
 //				printf(", file was %s/%s\n",watchpoints[event->wd],event->name);
 				char * fp  = (char * ) malloc(event->len + strlen(watchpoints[event->wd])+1);
 				sprintf(fp,"%s/%s",watchpoints[event->wd],event->name);
-				if (event->mask & (IN_CREATE | IN_ISDIR)) // new directory created
+				if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)){ // new directory created
+					printf("%.4x = %.4x\n",event->mask, (IN_CREATE|IN_ISDIR));
 					add_watch(fp);
+				}
 				if (cb != NULL) cb(fp,event->mask);
 				free(fp);
 			}
@@ -56,7 +62,7 @@ void listen(int (*cb)( char*,int)){
 }
 
 void add_watch(char * dir){
-	int wp  = inotify_add_watch( inotify_fd, dir, IN_CREATE | IN_DELETE | IN_CLOSE_WRITE |IN_MOVE);
+	int wp  = inotify_add_watch( inotify_fd, dir, IN_CREATE | IN_DELETE | IN_CLOSE_WRITE | IN_MOVE);
 	printf("adding directory: %s, wp = %d\n",dir,wp);
 	watchpoints[wp] = dir;
 	num_watchpoints = wp;
@@ -116,10 +122,75 @@ void watch_dir (char * dir_name)
     }
 }
 
-int cb(char * path, int mask){
-	printf("CALLBACK:got path '%s', mask: %d\n",path,mask);
-	return 1;
+
+/*int read_file (FILE *fp, char **buf) 
+{
+  int n, np,r;
+  char *b, *b2;
+
+  n = 1024;
+  np = n;
+  b = malloc(sizeof(char)*n);
+  while ((r = fread(b, sizeof(char), 1024, fp)) > 0) {
+    n += r;
+    if (np - n < 1024) { 
+      np *= 2;                      // buffer is too small, the next read could overflow!
+      b = realloc(b,np*sizeof(char));
+    }
+  }
+  *buf = b;
+  printf("read %d bytes\n",n);
+  return n - 1024;
+}*/
+
+
+int sync_open (char * path, const char * specifier ){
+	open_files = realloc(open_files, sizeof(FILE*) * (num_open_files+1));
+	open_files[num_open_files++] = fopen (path,specifier);
+	return open_files[num_open_files-1] != NULL ? num_open_files:-1;
 }
+
+void sync_close ( unsigned int id ){
+	if (id < num_open_files){
+		fclose(open_files[id]);
+	}
+}
+
+int sync_read (int id, char * buffer, int len){
+	if (id >= num_open_files) return 0;
+	FILE* fp = open_files[id];
+	if (fp != NULL){
+		return fread(buffer,sizeof(char),len,fp);
+	} else {
+		printf("fp was NULL\n");
+		return 0;
+	}
+}
+  
+int sync_write(char * path, int in_fp, int (*s_r)(int,char *,int)){
+	FILE * fp = fopen(path, "wb");	
+	printf("opening '%s' fp#%d for write\n",path,in_fp);
+	char data[1024];
+	int out=0, in;
+	if (fp != NULL){
+		while ( (in = s_r(in_fp,data,1024) ) > 0){
+			printf("read %d bytes\n");
+			out += fwrite(data,sizeof(char),in,fp);
+		}
+		fclose(fp);
+		return out;
+	} else {
+		printf("error opening %s\n",path);
+		return -1;
+	}
+}
+
+int sync_mkdir(char * path){
+	printf("mkdir %s\n",path);
+	mkdir(path, 0775);
+}
+
+
 /*int main ()
 {
     init();

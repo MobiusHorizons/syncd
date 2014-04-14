@@ -13,8 +13,63 @@
 } listenerQueue;
 int addListener(listenerQueue lq,functionPointer);*/
 
+#define CLOSE_WRITE	0x00000008
+#define CLOSE_NOWRITE	0x00000010
+#define CLOSE		(CLOSE_WRITE | CLOSE_NOWRITE)
+#define OPEN 		0x00000020
+#define MOVED_FROM	0x00000040
+#define MOVED_TO	0x00000080
+#define MOVE		(MOVED_FROM|MOVED_TO)
+#define CREATE		0x00000100
+#define DELETE		0x00000200
+#define ISDIR		0x40000000
+
+void ** plugins;
+
+int get_sync_paths(char *** paths, char *updated){
+	char * base = "/home/paul/Documents";
+	char * sync_base = "/home/paul/test/documents";
+	char ** container = malloc(sizeof(char*));
+	char * path = malloc(strlen(updated)- strlen(base) + strlen(sync_base) +1);
+	container[0] =path;
+	printf("%s%s\n",sync_base, updated + strlen(base));
+	sprintf(path,"%s%s",sync_base, updated + strlen(base));
+	*paths = container;
+	return 1;
+}
+
+int get_plugin(char * path){
+	return 0;
+}
+
 int cb(char * path, int mask){
 	printf("file %s changed, mask was %.4x\n",path,mask);
+	int i;
+	char ** sync_path;
+	int po = get_plugin(path);
+	int(*sync_read)(int,char*,int) 
+		= dlsym(plugins[po],"sync_read");
+	int (*sync_open_file)(char *,const char*) = dlsym(plugins[po],"sync_open");
+	void (*sync_close_file)(unsigned int) = dlsym(plugins[po],"sync_close");
+	int file = -1;
+	if ((mask & DELETE) ) return; // don't handle deletes for now.
+	file = sync_open_file(path,"rb");
+	int num_paths = get_sync_paths(&sync_path,path);
+	for( i = 0; i < num_paths && file >=0; i++){
+		int pd = get_plugin(sync_path[i]);
+		if ((mask & CREATE ) && (mask & ISDIR)){
+			printf("new dir\n");
+			int(*sync_mkdir)(char*) = 
+				dlsym(plugins[pd],"sync_mkdir");
+			sync_mkdir(sync_path[i]);
+		} else if (mask & CLOSE_WRITE){
+			int (*sync_write)(char*,int,int(*)(int,char*,int))
+				= dlsym(plugins[pd],"sync_write");
+			printf("wrote %d bytes\n",sync_write(sync_path[i],file,sync_read));
+		}
+	}
+	free(sync_path);
+	if (file != -1) sync_close_file(file);
 }
 
 typedef struct{
@@ -72,7 +127,6 @@ void unloadPlugins(void **plugins, int num){
 }
 
 int main(int argc, char** argv){
-	void ** plugins;
 	int i;
 	pthread_t t;
 	args_t args;
@@ -85,7 +139,7 @@ int main(int argc, char** argv){
 		watch_dir("/home/paul/Documents");
 		args.args = cb;
 		pthread_create(&t,NULL,(void*) &runner,(void*)&args);
-		watch_dir("/home/paul/Pictures");
+		//watch_dir("/home/paul/Pictures");
 	}
 	pthread_join(t,NULL);
 	unloadPlugins(plugins,num_plugins);
