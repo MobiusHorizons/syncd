@@ -73,12 +73,10 @@ void unloadPlugins(void **plugins, int num){
 }
 
 int main(int argc, char** argv){
-	//char *testDir1 = calloc(1, 256); //allocate 1 chunk of 256 bytes, 0-initialized
 	char *testDir1 = alloca(256); //allocate 256 bytes for filename
 	strcat(testDir1, getenv("HOME"));
 	strcat(testDir1, "/Documents");
 
-	//char *testDir2 = calloc(1, 256); //allocate 1 chunk of 256 bytes, 0-initialized
 	char *testDir2 = alloca(256); //allocate 256 bytes for filename
 	strcat(testDir2, getenv("HOME"));
 	strcat(testDir2, "/Pictures");
@@ -100,7 +98,4 @@ int main(int argc, char** argv){
 	}
 	pthread_join(t,NULL);
 	unloadPlugins(plugins,num_plugins);
-
-	//free(testDir1);
-	//free(testDir2);
 }
