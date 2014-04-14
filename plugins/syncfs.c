@@ -49,7 +49,6 @@ void listen(int (*cb)( char*,int)){
 		while( i < length){
 			struct inotify_event * event = (struct inotify_event * ) &buffer[i];
 			if (event->len){
-				printf(", file was %s/%s\n",watchpoints[event->wd],event->name);
 				char * fp  = (char * ) malloc(event->len + strlen(watchpoints[event->wd])+1);
 				sprintf(fp,"%s/%s",watchpoints[event->wd],event->name);
 				if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)){ // new directory created
