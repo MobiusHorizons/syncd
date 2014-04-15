@@ -218,6 +218,11 @@ int sync_rm(char * path){
 	return remove(path);
 }
 
+int sync_mv(char*from,char*to){
+	printf("trying to move %s to %s\n",from,to);
+	return rename(from,to);
+}
+
 /*int main ()
 {
     init();

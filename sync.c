@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <alloca.h>
+#include <errno.h>
 
 
 
@@ -27,6 +28,17 @@ void ** plugins;
 char * testDir1;
 char * testDir2; // these will be used for synchronization.
 
+char ** free_all(char ** array, int length){
+	int i;
+	if (array == NULL) length = 0;
+	for (i = 0; i < length; i++){
+		free(array[i]);
+	}
+	free(array);
+	array = NULL;
+	return NULL;
+}
+
 int get_sync_paths(char *** paths, char *updated){
 	char * base = testDir1;
 	char * sync_base = testDir2;
@@ -44,6 +56,13 @@ int get_plugin(char * path){
 }
 
 int cb(char * path, int mask){
+	static char ** moved_from;
+	static int num_moved_from;
+	if (mask & MOVED_FROM){
+		if (moved_from != NULL) 
+			moved_from = free_all(moved_from,num_moved_from);
+		num_moved_from = get_sync_paths(&moved_from,path);
+	}
 	printf("file %s changed, mask was %.4x\n",path,mask);
 	int i;
 	char ** sync_path;
@@ -53,25 +72,43 @@ int cb(char * path, int mask){
 	int (*sync_open_file)(char *,const char*) = dlsym(plugins[po],"sync_open");
 	void (*sync_close_file)(unsigned int) = dlsym(plugins[po],"sync_close");
 	int file = -1;
-	if (mask & (CREATE |CLOSE) )file = sync_open_file(path,"rb");
+	file = sync_open_file(path,"rb");
 	int num_paths = get_sync_paths(&sync_path,path);
+	printf("file = %d, errno = %d, and num_paths = %d\n",file,errno,num_paths);
 	for( i = 0; i < num_paths ; i++){
 		int pd = get_plugin(sync_path[i]);
+		if (file != -1){
+			int (*of)(char *,const char*) = dlsym(plugins[pd],"sync_open");
+	        	void (*cf)(unsigned int) = dlsym(plugins[pd],"sync_close");
+			int tf = of(sync_path[i],"rb");
+			if (tf == -1){
+				mask |= CLOSE_WRITE;
+				cf(tf);
+			}
+		}
+	
 		if ((mask & CREATE ) && (mask & ISDIR) && file != -1){
 			printf("new dir\n");
 			int(*sync_mkdir)(char*) = 
 				dlsym(plugins[pd],"sync_mkdir");
 			sync_mkdir(sync_path[i]);
-		} else if (mask & CLOSE_WRITE && file != -1){
+		} else  
+		if (mask & CLOSE_WRITE && file != -1){
 			int (*sync_write)(char*,int,int(*)(int,char*,int))
 				= dlsym(plugins[pd],"sync_write");
 			printf("wrote %d bytes\n",sync_write(sync_path[i],file,sync_read));
-		} else if (mask & DELETE){
+		} else
+		if (mask & DELETE){
 			int (*sync_rm)(char*) = dlsym(plugins[pd],"sync_rm");
 			printf("deleted file %s, returned %d\n",sync_path[i],sync_rm(sync_path[i]));
+		} 
+		if (mask & MOVED_TO){
+			int (*sync_mv)(char*,char*) = dlsym(plugins[pd],"sync_mv");
+			printf("moved file %s to %s, returned %d\n",moved_from[i],sync_path[i],sync_mv(moved_from[i],sync_path[i]));
 		}
 	}
-	free(sync_path);
+	if (mask & MOVED_TO) moved_from = free_all(moved_from,num_moved_from);
+	sync_path = free_all(sync_path,num_paths);
 	if (file != -1) sync_close_file(file);
 }
 
