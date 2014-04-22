@@ -1,3 +1,9 @@
-all : sync
+CC:= clang
+CFLAGS := -g
+
+all : sync plugins
 sync: sync.c
-	$(CC) $(CCFLAGS) -g -ldl -pthread sync.c -o sync
+	$(CC) $(CFLAGS) -fPIC -s -ldl -pthread -lpython2.7 sync.c -o sync
+
+plugins :
+	$(MAKE) -C plugins

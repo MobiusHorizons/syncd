@@ -13,6 +13,9 @@
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define EVENT_BUF_LEN	(1024 * (EVENT_SIZE + 16))
+#define PLUGIN_PREFIX "fs://"
+#define PLUGIN_PREFIX_LEN 5
+
 FILE ** open_files;
 int num_open_files;
 int first_open_files;
@@ -21,12 +24,12 @@ static int inotify_fd;
 static char* watchpoints[255]; // should use dynamic memory, but oh well
 static int num_watchpoints;
 
-void init();
+char* init();
 void add_watch(char *);
 void watch_dir(char *);
 void listen(int(*)(char*,int));
 
-void init(){
+char * init(){
 	num_watchpoints = 0;
 	num_open_files = 0;
 	num_open_files = 0;
@@ -34,6 +37,7 @@ void init(){
 	if (inotify_fd < 0){
 		perror("inotify_init");
 	}
+	return PLUGIN_PREFIX;
 	
 }
 
@@ -49,11 +53,11 @@ void listen(int (*cb)( char*,int)){
 		while( i < length){
 			struct inotify_event * event = (struct inotify_event * ) &buffer[i];
 			if (event->len){
-				char * fp  = (char * ) malloc(event->len + strlen(watchpoints[event->wd])+1);
-				sprintf(fp,"%s/%s",watchpoints[event->wd],event->name);
+				char * fp  = (char * ) malloc(PLUGIN_PREFIX_LEN + event->len + strlen(watchpoints[event->wd])+1);
+				sprintf(fp,"%s%s/%s",PLUGIN_PREFIX,watchpoints[event->wd],event->name);
 				if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)){ // new directory created
 					printf("%.4x = %.4x\n",event->mask, (IN_CREATE|IN_ISDIR));
-					add_watch(fp);
+					add_watch(fp + PLUGIN_PREFIX_LEN);
 				}
 				if (cb != NULL) cb(fp,event->mask);
 				free(fp);
@@ -72,8 +76,7 @@ void add_watch(char * dir){
 	num_watchpoints = wp;
 }
 
-void watch_dir (char * dir_name)
-{
+void watch_dir_recurse(char * dir_name){
 	DIR * d;
 	/* Open the directory specified by "dir_name". */
 	d = opendir (dir_name);
@@ -114,7 +117,7 @@ void watch_dir (char * dir_name)
 			exit (EXIT_FAILURE);
 		    }
 		    /* Recursively call "list_dir" with the new path. */
-		    watch_dir (path);
+		    watch_dir_recurse (path);
 		}
 	    }
 	}
@@ -125,6 +128,13 @@ void watch_dir (char * dir_name)
         exit (EXIT_FAILURE);
     }
 }
+
+void watch_dir (char * dir_name)
+{
+	dir_name += PLUGIN_PREFIX_LEN;
+	watch_dir_recurse(dir_name);
+}
+
 
 
 /*int read_file (FILE *fp, char **buf) 
@@ -148,8 +158,11 @@ void watch_dir (char * dir_name)
 }*/
 
 
-int sync_open (char * path, const char * specifier ){
-	FILE * fp = fopen(path,specifier);
+FILE * sync_open (char * path, const char * specifier ){
+	path += PLUGIN_PREFIX_LEN;
+	printf("opening %s\n",path);
+	return fopen(path,specifier);
+/*	FILE * fp = fopen(path,specifier);
 	if (fp == NULL) return -1;
 	if (first_open_files < num_open_files){
 		int f = first_open_files++;
@@ -164,11 +177,12 @@ int sync_open (char * path, const char * specifier ){
 		open_files[num_open_files++] = fp;
 		first_open_files = num_open_files;
 		return num_open_files-1;
-	}
+	}*/
 }
 
-void sync_close ( unsigned int id ){
-	if (id < num_open_files){
+void sync_close ( FILE * fd ){
+	fclose(fd);
+	/*if (id < num_open_files){
 		fclose(open_files[id]);
 		open_files[id] = NULL;
 		if (first_open_files > id){
@@ -176,10 +190,10 @@ void sync_close ( unsigned int id ){
 				open_files = realloc(open_files, sizeof(FILE*) * --num_open_files);
 			first_open_files = id;
 		}
-	}
+	}*/
 }
 
-int sync_read (int id, char * buffer, int len){
+/*int sync_read (int id, char * buffer, int len){
 	if (id >= num_open_files) return 0;
 	FILE* fp = open_files[id];
 	printf("retrieving fp#%d, it is %p; len = %d\n",id,fp,len);
@@ -188,19 +202,19 @@ int sync_read (int id, char * buffer, int len){
 	} else {
 		return 0;
 	}
-}
+}*/
   
-int sync_write(char * path, int in_fp, int (*s_r)(int,char *,int)){
-	FILE * fp = fopen(path, "wb");	
-	printf("opening '%s' fp#%d for write\n",path,in_fp);
+int sync_write(char * path, FILE * fo){
+	path += PLUGIN_PREFIX_LEN;
+	FILE * fd = fopen(path, "wb");	
 	char data[1024];
 	int out=0, in;
-	if (fp != NULL){
-		while ( (in = s_r(in_fp,data,1024) ) > 0){
+	if (fd != NULL && fo != NULL){
+		while ( (in = fread(data,sizeof(char),1024,fo) ) > 0){
 			printf("read %d bytes\n");
-			out += fwrite(data,sizeof(char),in,fp);
+			out += fwrite(data,sizeof(char),in,fd);
 		}
-		fclose(fp);
+		fclose(fd);
 		return out;
 	} else {
 		printf("error opening %s\n",path);
@@ -209,16 +223,20 @@ int sync_write(char * path, int in_fp, int (*s_r)(int,char *,int)){
 }
 
 int sync_mkdir(char * path){
+	path += PLUGIN_PREFIX_LEN;
 	printf("mkdir %s\n",path);
 	mkdir(path, 0777); // TODO: this should 
 }
 
 int sync_rm(char * path){
+	path += PLUGIN_PREFIX_LEN;
 	printf("trying to delete %s\n",path);
 	return remove(path);
 }
 
 int sync_mv(char*from,char*to){
+	from += PLUGIN_PREFIX_LEN;
+	to += PLUGIN_PREFIX_LEN;
 	printf("trying to move %s to %s\n",from,to);
 	return rename(from,to);
 }
