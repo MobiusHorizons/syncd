@@ -1,2 +1,4 @@
 *.so.* 
 *.o
+dropbox_py.c
+dropbox_py.h

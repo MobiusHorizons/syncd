@@ -1,4 +1,4 @@
-CFLAGS := -g 
+CFLAGS := -ggdb 
 all: libsyncfs.so libsyncdb.so
 libsyncfs.so : syncfs.c
 
@@ -20,3 +20,5 @@ libsyncdb.so: dropbox_c.o dropbox_py.o
 
 lib%.so: %.o
 	ld -shared  -o $@  $<
+clean:
+	rm -f dropbox_py.c dropbox_py.h  *.o *.so

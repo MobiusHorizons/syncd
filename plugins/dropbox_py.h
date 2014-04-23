@@ -13,11 +13,14 @@
 #endif
 
 __PYX_EXTERN_C DL_IMPORT(void) py_main(void);
+__PYX_EXTERN_C DL_IMPORT(void) py_init(void);
 __PYX_EXTERN_C DL_IMPORT(void) update(void);
 __PYX_EXTERN_C DL_IMPORT(PyObject) *longpoll(int (*)(char *, int));
 __PYX_EXTERN_C DL_IMPORT(char) *py_open(char *);
 __PYX_EXTERN_C DL_IMPORT(int) py_write(char *, FILE *);
-__PYX_EXTERN_C DL_IMPORT(int) py_cpy(char *, char *);
+__PYX_EXTERN_C DL_IMPORT(int) py_mv(char *, char *);
+__PYX_EXTERN_C DL_IMPORT(int) py_mkdir(char *);
+__PYX_EXTERN_C DL_IMPORT(int) py_rm(char *);
 
 #endif /* !__PYX_HAVE_API__dropbox_py */
 

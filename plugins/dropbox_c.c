@@ -13,6 +13,7 @@ char * init(){
 	PyEval_InitThreads();
 	Py_Initialize();
 	initdropbox_py();
+	py_init();
 	//FILE* f = fopen("/home/paul/src/syncronization/state.json","rb");
 	//py_write("/test.txt",f);
 	return PLUGIN_PREFIX;
@@ -78,14 +79,17 @@ int sync_write(char * path, FILE * fp){
 }
 
 int sync_mkdir(char* path){
+	py_mkdir(path);
 	return 0;
 }	
 
 int sync_rm(char * path){
+	py_rm(path);
 	return 0;
 }
 
 int sync_mv(char * from, char* to){
+	py_mv(from,to);
 	return 0;
 }
 

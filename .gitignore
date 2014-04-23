@@ -1,3 +1,8 @@
 *.orig 
 *.bak
 sync
+state.json
+old.json
+*.bak
+token_store.txt
+search_cache.json

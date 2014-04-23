@@ -203,9 +203,22 @@ void sync_close ( FILE * fd ){
 		return 0;
 	}
 }*/
-  
+ 
+int mkpath(char* file_path, mode_t mode) {
+  char* p;
+  for (p=strchr(file_path+1, '/'); p; p=strchr(p+1, '/')) {
+    *p='\0';
+    if (mkdir(file_path, mode)==-1) {
+      if (errno!=EEXIST) { *p='/'; return -1; }
+    }
+    *p='/';
+  }
+  return 0;
+}
+ 
 int sync_write(char * path, FILE * fo){
 	path += PLUGIN_PREFIX_LEN;
+        mkpath(path,0777);// make directory if it doesn't exist yet
 	FILE * fd = fopen(path, "wb");	
 	char data[1024];
 	int out=0, in;
@@ -225,7 +238,7 @@ int sync_write(char * path, FILE * fo){
 int sync_mkdir(char * path){
 	path += PLUGIN_PREFIX_LEN;
 	printf("mkdir %s\n",path);
-	mkdir(path, 0777); // TODO: this should 
+	return mkpath(path,0777);
 }
 
 int sync_rm(char * path){

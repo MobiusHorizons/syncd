@@ -130,6 +130,7 @@ int cb(char * path, int mask){
 	return 0;
 }
 
+/* //these were used for pthread stuff
 typedef struct{
 	void * fun;
 	void * args;
@@ -144,6 +145,7 @@ void runner(void* ptr){
 	}
 		
 }
+*/
 
 int loadPlugins(Plugin **return_plugins){
 	Plugin * plugins = NULL;
@@ -198,37 +200,35 @@ void add_watch(char* path){
 }
 
 int main(int argc, char** argv){
-	testDir1 = alloca(256); //allocate 256 bytes for filename
-//	strcpy(testDir1, "fs://");
-	strcat(testDir1, getenv("HOME"));// we won't asume the first character is '\0'
-	strcpy(testDir1, "fs:///home/paul/Documents");
-
 	testDir2 = alloca(256); //allocate 256 bytes for filename
-//	strcpy(testDir2, "fs://");
-//	strcat(testDir2, getenv("HOME"));
-	strcpy(testDir2, "dropbox:///testdier-1235asdf"); // TODO: create the destination if it doesn't exist.
+	testDir1 = alloca(256); //allocate 256 bytes for filename
+	strcpy(testDir1, "dropbox://");
+	strcpy(testDir2, "fs://"); // 2 is dest
+	strcat(testDir2, getenv("HOME"));// we won't asume the first character is '\0'
+	strcat(testDir2, "/DropBox");
 
-	pthread_t *t;
-	args_t args;
+//	pthread_t *t;
+//	args_t args;
 	printf("t1 = %s, t2 = %s\n",testDir1,testDir2);
 	num_plugins = loadPlugins(&plugins);
 	printf("got plugins\n");
 	int i;
-        t = (pthread_t *)malloc(sizeof(pthread_t) * num_plugins);
+//        t = (pthread_t *)malloc(sizeof(pthread_t) * num_plugins);
 	add_watch(testDir1);
-	add_watch(testDir2);
+//	add_watch(testDir2);
 	for ( i = 0; i < num_plugins; i++){
-		printf("here\n");
-		args.fun = dlsym(plugins[i].ptr,"listen");
-		printf("here\n");
-		args.args = cb;
-		printf("here\n");
-		pthread_create(&t[i],NULL,(void*) &runner,(void*)&args);
-		printf("here\n");
+		void (*listen)( int(*)(char*,int)) = dlsym(plugins[i].ptr,"listen");
+		int pid = fork();
+		if (pid == 0){ // child
+			listen(cb);
+			exit(0);
+		}	
+//		args.fun = dlsym(plugins[i].ptr,"listen");
+//		args.args = cb;
+//		pthread_create(&t[i],NULL,(void*) &runner,(void*)&args);
 	}
-	for ( i = 0; i < num_plugins; i++){
-		pthread_join(t[i],NULL);
-	}
+//	for ( i = 0; i < num_plugins; i++){
+//		pthread_join(t[i],NULL);
+//	}
 	unloadPlugins(plugins,num_plugins);
-	free(t);
 }

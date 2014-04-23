@@ -175,18 +175,20 @@ class DropboxTerm(cmd.Cmd):
         self.app_secret = app_secret
         self.current_path = ''
         self.prompt = "Dropbox> "
+        self.serialized_token = None
+        self.sess = None
 
         self.api_client = None
         try:
-            serialized_token = open(self.TOKEN_FILE).read()
-            if serialized_token.startswith('oauth1:'):
-                access_key, access_secret = serialized_token[len('oauth1:'):].split(':', 1)
+            self.serialized_token = open(self.TOKEN_FILE).read()
+            if self.serialized_token.startswith('oauth1:'):
+                access_key, access_secret = self.serialized_token[len('oauth1:'):].split(':', 1)
                 sess = session.DropboxSession(self.app_key, self.app_secret)
                 sess.set_token(access_key, access_secret)
                 self.api_client = client.DropboxClient(sess)
                 print "[loaded OAuth 1 access token]"
-            elif serialized_token.startswith('oauth2:'):
-                access_token = serialized_token[len('oauth2:'):]
+            elif self.serialized_token.startswith('oauth2:'):
+                access_token = self.serialized_token[len('oauth2:'):]
                 self.api_client = client.DropboxClient(access_token)
                 print "[loaded OAuth 2 access token]"
             else:
@@ -378,12 +380,43 @@ class DropboxTerm(cmd.Cmd):
         else:
             return parts[0], parts[1:], line
 
+def do_login(self):
+    """log in to a Dropbox account"""
+    flow = client.DropboxOAuth2FlowNoRedirect(self.app_key, self.app_secret)
+    authorize_url = flow.start()
+    sys.stdout.write("1. Go to: " + authorize_url + "\n")
+    sys.stdout.write("2. Click \"Allow\" (you might have to log in first).\n")
+    sys.stdout.write("3. Copy the authorization code.\n")
+    code = raw_input("Enter the authorization code here: ").strip()
+    try:
+        access_token, user_id = flow.finish(code)
+    except rest.ErrorResponse, e:
+        sys.stdout.write('Error: %s\n' % str(e))
+        return
+    with open(self.TOKEN_FILE, 'w') as f:
+        f.write('oauth2:' + access_token)
+    self.api_client = client.DropboxClient(access_token)
+
 
 cdef public void py_main():
     if APP_KEY == '' or APP_SECRET == '':
         exit("You need to set your APP_KEY and APP_SECRET!")
     term = DropboxTerm(APP_KEY, APP_SECRET)
     term.cmdloop()
+
+cdef public void py_init():
+    if APP_KEY == '' or APP_SECRET == '':
+        exit("You need to set your APP_KEY and APP_SECRET!")
+    print "initializing dropbox"
+    term = DropboxTerm(APP_KEY,APP_SECRET)
+    if not term.serialized_token:
+        print "trying to do login"
+        do_login(term);
+    if not os.path.exists(STATE_FILE):
+        save_state({
+            'access_token':term.serialized_token,
+            'tree' : {}
+        })
 
 cdef public void update():
     if APP_KEY == '' or APP_SECRET == '':
@@ -433,10 +466,11 @@ cdef public longpoll( int (*cb)(char*,int) ) with gil:
     if APP_KEY == '' or APP_SECRET == '':
         exit("You need to set your APP_KEY and APP_SECRET!")
     term = DropboxTerm(APP_KEY,APP_SECRET)
-
+    print "terminal loaded"
     # Load state
     state = load_state()
     cursor = state.get('cursor')
+    tree =  state['tree']
     while True: 
         result = term.api_client.delta(cursor)
         cursor = result['cursor']
@@ -455,29 +489,33 @@ cdef public longpoll( int (*cb)(char*,int) ) with gil:
                 else:
                     cb(pfx_path,0x200)
                 print '%s was deleted' % path
-
+            apply_delta(tree, (path,metadata))
+            state['cursor'] = cursor
+            state['tree'] = tree
+            save_state(state)
         if not result['has_more']:
-
+	
             changes = False
             # poll until there are changes
             while not changes:
                 url = 'https://api-notify.dropbox.com/1/longpoll_delta'
-#                response = requests.get('https://api-notify.dropbox.com/1/longpoll_delta',
-#                params={
-#                    'cursor': cursor,  # latest cursor from delta call
-#                   'timeout': 120     # default is 30 seconds
-#                })
-                c_cursor = <char*>malloc(cursor.len+1);
-                strcpy(c_cursor,cursor);
-                args = <char*> malloc(cursor.len + url.len + 47)
-                sprintf(args,"curl -s -G -d 'cursor=%s' -d 'timeout=120' 'https://api-notify.dropbox.com/1/longpoll_delta'",c_cursor);
-                with nogil:
-                    response = curl_get(args);
+                response = requests.get('https://api-notify.dropbox.com/1/longpoll_delta',
+                params={
+                    'cursor': cursor,  # latest cursor from delta call
+                   'timeout': 120     # default is 30 seconds
+                })
+#                print response
+#                c_cursor = <char*>malloc(cursor.len+1);
+#                strcpy(c_cursor,cursor);
+#                args = <char*> malloc(cursor.len + url.len + 47)
+#                sprintf(args,"curl -s -G -d 'cursor=%s' -d 'timeout=120' 'https://api-notify.dropbox.com/1/longpoll_delta'",c_cursor);
+#                with nogil:
+#                    response = curl_get(args);
 		
-                data = json.loads(response)
-                free(args)
-                free(c_cursor)
-#                data = response.json()
+#                data = json.loads(response)
+#                free(args)
+#                free(c_cursor)
+                data = response.json()
 
                 print data
                 changes = data['changes']
@@ -517,12 +555,25 @@ cdef public int py_write(char * path,FILE * fd) :
     print retn
     return retn['bytes']
 
-cdef public int py_cpy(char * fr, char* to) with gil:
+cdef public int py_mv(char * fr, char* to):
     if APP_KEY == '' or APP_SECRET == '':
         exit("You need to set your APP_KEY and APP_SECRET!")
     term = DropboxTerm(APP_KEY,APP_SECRET)
     c = term.api_client
-    with c.get_file(fr) as f:
-        print c.put_file('/test.txt',f)
+    c.file_move(fr,to)
+
+cdef public int py_mkdir(char*path):
+    if APP_KEY == '' or APP_SECRET == '':
+        exit("You need to set your APP_KEY and APP_SECRET!")
+    term = DropboxTerm(APP_KEY,APP_SECRET)
+    c = term.api_client
+    c.file_create_folder(path)
+
+cdef public int py_rm(char* path):
+    if APP_KEY == '' or APP_SECRET == '':
+        exit("You need to set your APP_KEY and APP_SECRET!")
+    term = DropboxTerm(APP_KEY,APP_SECRET)
+    c = term.api_client
+    c.file_delete(path)
 
 	
