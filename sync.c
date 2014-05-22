@@ -1,30 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <dlfcn.h>
-#include <string.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <alloca.h>
-#include <errno.h>
-
-
-
-
-#define CLOSE_WRITE	0x00000008
-#define CLOSE_NOWRITE	0x00000010
-#define CLOSE		(CLOSE_WRITE | CLOSE_NOWRITE)
-#define OPEN 		0x00000020
-#define MOVED_FROM	0x00000040
-#define MOVED_TO	0x00000080
-#define MOVE		(MOVED_FROM|MOVED_TO)
-#define CREATE		0x00000100
-#define DELETE		0x00000200
-#define ISDIR		0x40000000
-
+#include "os.h"
 typedef struct {
-	void * ptr;
+	Library ptr;
 	const char * prefix;
 } Plugin;
 
@@ -46,8 +22,8 @@ char ** free_all(char ** array, int length){
 }
 
 int get_sync_paths(char *** paths, char *updated){
-	char * base = testDir1;
-	char * sync_base = testDir2;
+	char * base = testDir1; // "dropbox://" "testfolder/myfolder1/test.txt"
+	char * sync_base = testDir2; // "fs:///home/paul/DrobBox" "/test.txt"
 	char ** container = malloc(sizeof(char*));
 	char * path = malloc(strlen(updated)- strlen(base) + strlen(sync_base) +2);
 	container[0] =path;
@@ -74,7 +50,7 @@ int get_plugin(char * path){
 int cb(char * path, int mask){
 	static char ** moved_from;
 	static int num_moved_from;
-	if (mask & MOVED_FROM){
+	if (mask & S_MOVED_FROM){
 		if (moved_from != NULL) 
 			moved_from = free_all(moved_from,num_moved_from);
 		num_moved_from = get_sync_paths(&moved_from,path);
@@ -83,11 +59,8 @@ int cb(char * path, int mask){
 	int i;
 	char ** sync_path;
 	int po = get_plugin(path);
-	FILE* (*sync_open_file)(char *,const char*) = dlsym(plugins[po].ptr,"sync_open");
-	void (*sync_close_file)(FILE*) = dlsym(plugins[po].ptr,"sync_close");
-	printf("trying to open file\n");
-	FILE * file = sync_open_file(path,"rb");
-	printf("file opened, file = %p\n",file);
+	S_OPEN_FILE  sync_open_file = (S_OPEN_FILE)dlsym(plugins[po].ptr,"sync_open");
+//	S_CLOSE_FILE sync_close_file = (S_CLOSE_FILE) dlsym(plugins[po].ptr,"sync_close");
 	int num_paths = get_sync_paths(&sync_path,path);
 	printf(" errno = %d, and num_paths = %d\n",errno,num_paths);
 	for( i = 0; i < num_paths ; i++){
@@ -97,36 +70,41 @@ int cb(char * path, int mask){
 	        	void (*cf)(FILE*) = dlsym(plugins[pd].ptr,"sync_close");
 			FILE * tf = of(sync_path[i],"rb");
 			if (tf == NULL){
-				mask |= CLOSE_WRITE;
+				mask |= S_CLOSE_WRITE;
 				cf(tf);
 			}
 		}*/
 	
-		if ((mask & CREATE ) && (mask & ISDIR) && file != NULL){
+		if ((mask & S_CREATE ) && (mask & S_ISDIR)){
 			printf("new dir\n");
-			int(*sync_mkdir)(char*) = 
-				dlsym(plugins[pd].ptr,"sync_mkdir");
+			S_MKDIR sync_mkdir = (S_MKDIR) dlsym(plugins[pd].ptr,"sync_mkdir");
 			sync_mkdir(sync_path[i]);
 		} else  
-		if (mask & CLOSE_WRITE && file != NULL){
+		if (mask & S_CLOSE_WRITE ){
+			printf("trying to open file\n");
+			FILE * file = sync_open_file(path,"rb");
+			printf("file opened, file = %p\n",file);
 			printf("writing file ...\n");
-			int (*sync_write)(char*,FILE *)
-				= dlsym(plugins[pd].ptr,"sync_write");
-			printf("starting write\n");
-			printf("wrote %d bytes\n",sync_write(sync_path[i],file));
+			if (file !=NULL){
+				S_WRITE sync_write = (S_WRITE) dlsym(plugins[pd].ptr,"sync_write");
+				printf("starting write\n");
+				printf("wrote %d bytes\n",sync_write(sync_path[i],file));
+				fclose(file);
+			}
 		} else
-		if (mask & DELETE){
-			int (*sync_rm)(char*) = dlsym(plugins[pd].ptr,"sync_rm");
+		if (mask & S_DELETE){
+//			int (*sync_rm)(char*) 
+			S_RM sync_rm = (S_RM) dlsym(plugins[pd].ptr,"sync_rm");
 			printf("deleted file %s, returned %d\n",sync_path[i],sync_rm(sync_path[i]));
 		} 
-		if (mask & MOVED_TO){
-			int (*sync_mv)(char*,char*) = dlsym(plugins[pd].ptr,"sync_mv");
+		if (mask & S_MOVED_TO){
+//			int (*sync_mv)(char*,char*) 
+			S_MV sync_mv = (S_MV) dlsym(plugins[pd].ptr,"sync_mv");
 			printf("moved file %s to %s, returned %d\n",moved_from[i],sync_path[i],sync_mv(moved_from[i],sync_path[i]));
 		}
 	}
-	if (mask & MOVED_TO) moved_from = free_all(moved_from,num_moved_from);
+	if (mask & S_MOVED_TO) moved_from = free_all(moved_from,num_moved_from);
 	sync_path = free_all(sync_path,num_paths);
-	if (file != NULL) sync_close_file(file);
 	return 0;
 }
 
@@ -157,24 +135,23 @@ int loadPlugins(Plugin **return_plugins){
 	if (dp != NULL)
   	{
     		while ((ep = readdir (dp))){
+#if defined(UNIX)
       			if(ep->d_type == DT_REG){
+#endif
 				char * filename = malloc(strlen(ep->d_name) + strlen("plugins/")+1);
 				sprintf(filename,"plugins/%s",ep->d_name);
-				printf("trying to load %s ",filename);
-				fflush(stdout);
 				p.ptr = dlopen(filename, RTLD_LAZY);
 				if (p.ptr != NULL){
 					plugins = realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
-					char * (*init)() = dlsym(p.ptr,"init");
+					S_INIT init = (S_INIT) dlsym(p.ptr,"init");
 					p.prefix = init();
 					plugins[num_plugins] = p;
 					num_plugins ++ ;
-					printf ("SUCCESS\n");
-				} else{
-					printf("FAIL\n");
 				}
 				free(filename);
+#if defined(UNIX)
 			}
+#endif
 		}
 		closedir (dp);
   	}
@@ -185,6 +162,8 @@ int loadPlugins(Plugin **return_plugins){
 void unloadPlugins(Plugin *plugins, int num){
 	int i;
 	for (i = 0; i < num; i++){
+		S_UNLOAD sync_unload = (S_UNLOAD) dlsym(plugins[i].ptr,"sync_unload");
+		if (sync_unload != NULL) sync_unload();
 		dlclose(plugins[i].ptr);
 	}
 	free(plugins);
@@ -194,19 +173,22 @@ void add_watch(char* path){
 	int p = get_plugin(path);
 	printf("plugin for '%s' is %d\n",path,p);
 	if (p != -1){
-		void (*watch_dir)(char*) = dlsym(plugins[p].ptr,"watch_dir");
+		S_WATCH_DIR watch_dir = (S_WATCH_DIR) dlsym(plugins[p].ptr,"watch_dir");
 		watch_dir(path);
 	}
 }
 
 int main(int argc, char** argv){
-	testDir2 = alloca(256); //allocate 256 bytes for filename
-	testDir1 = alloca(256); //allocate 256 bytes for filename
-	strcpy(testDir1, "dropbox://");
+	testDir2 = malloc(256);//alloca(256); //allocate 256 bytes for filename
+	testDir1 = malloc(256);//alloca(256); //allocate 256 bytes for filename
+	strcpy(testDir1, "dropbox:///");
 	strcpy(testDir2, "fs://"); // 2 is dest
+#if defined(WIN32)
+	strcat(testDir2, "/home/paul/DrDocx");
+#else
 	strcat(testDir2, getenv("HOME"));// we won't asume the first character is '\0'
-	strcat(testDir2, "/DropBox");
-
+	strcat(testDir2, "/cmDropBox/");
+#endif
 //	pthread_t *t;
 //	args_t args;
 	printf("t1 = %s, t2 = %s\n",testDir1,testDir2);
@@ -217,7 +199,8 @@ int main(int argc, char** argv){
 	add_watch(testDir1);
 //	add_watch(testDir2);
 	for ( i = 0; i < num_plugins; i++){
-		void (*listen)( int(*)(char*,int)) = dlsym(plugins[i].ptr,"listen");
+		//void (*listen)( int(*)(char*,int)) = dlsym(plugins[i].ptr,"listen");
+		S_LISTEN listen =(S_LISTEN) dlsym(plugins[i].ptr,"sync_listen");
 		int pid = fork();
 		if (pid == 0){ // child
 			listen(cb);

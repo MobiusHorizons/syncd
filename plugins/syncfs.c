@@ -27,7 +27,7 @@ static int num_watchpoints;
 char* init();
 void add_watch(char *);
 void watch_dir(char *);
-void listen(int(*)(char*,int));
+void sync_listen(int(*)(char*,int));
 
 char * init(){
 	num_watchpoints = 0;
@@ -41,7 +41,7 @@ char * init(){
 	
 }
 
-void listen(int (*cb)( char*,int)){
+void sync_listen(int (*cb)( char*,int)){
 	int length;
 	char buffer[EVENT_BUF_LEN];
 	int i;
@@ -221,12 +221,14 @@ int sync_write(char * path, FILE * fo){
         mkpath(path,0777);// make directory if it doesn't exist yet
 	FILE * fd = fopen(path, "wb");	
 	char data[1024];
-	int out=0, in;
+	int out=0, in, t=0;
 	if (fd != NULL && fo != NULL){
 		while ( (in = fread(data,sizeof(char),1024,fo) ) > 0){
-			printf("read %d bytes\n");
+			t+= in;
+			printf("\rread %d bytes",t); fflush(stdout);
 			out += fwrite(data,sizeof(char),in,fd);
 		}
+		printf("\n");
 		fclose(fd);
 		return out;
 	} else {

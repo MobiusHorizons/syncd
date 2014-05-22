@@ -1,0 +1,3 @@
+[submodule "plugins/libdropbox"]
+	path = plugins/libdropbox
+	url = https://github.com/MobiusHorizons/libdropbox.git

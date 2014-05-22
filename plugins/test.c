@@ -1,4 +1,5 @@
 #include<stdio.h>
-void init(){
+char *init(){
 	printf("new plugin\n");
+	return("test://");
 }

@@ -1,9 +1,17 @@
-CC:= gcc
-CFLAGS := 
+CFLAGS := -ggdb 
+EXEEXT:=
+ifeq ($(CC),cc)
+CLIBS:=  -pthread -ldl 
+CFLAGS := $(CFLAGS) -fPIC
 
-all : sync plugins/
-sync: sync.c
-	$(CC) $(CFLAGS) -fPIC -ggdb -ldl -pthread -lpython2.7 sync.c -o sync
+else
+CLIBS:= -pthread #$(shell pkg-config --libs python) -pthread
+EXEEXT:=.exe
+endif
+
+all : sync$(EXEEXT) plugins/
+sync$(EXEEXT): sync.c
+	$(CC) $(CFLAGS) $(CLIBS) sync.c -o sync$(EXEEXT)
 
 plugins/ : plugins/*.so
 	$(MAKE) -C plugins
