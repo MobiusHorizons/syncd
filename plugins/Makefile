@@ -1,4 +1,4 @@
-CFLAGS := -Ilibdropbox/ -ggdb 
+CFLAGS := -Ilibdropbox/ -ggdb -fno-stack-protector
 all: libsyncfs.so libsyncgdrive.so
 libsyncfs.so : syncfs.c
 
