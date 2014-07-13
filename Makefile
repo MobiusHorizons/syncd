@@ -11,7 +11,7 @@ endif
 
 all : sync$(EXEEXT) plugins/
 sync$(EXEEXT): sync.c
-	$(CC) $(CFLAGS) $(CLIBS) sync.c -o sync$(EXEEXT)
+	$(CC) $(CFLAGS) sync.c $(CLIBS) -o sync$(EXEEXT)
 
 plugins/ : plugins/*.so
 	$(MAKE) -C plugins
