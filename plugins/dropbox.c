@@ -65,7 +65,7 @@ void sync_unload(){
 }
 
 
-void sync_listen(int (*cb)(char*,int)){
+void sync_listen(int (*cb)(const char*,int)){
 	static char * cursor;
 	bool has_more;
 	int i;
@@ -128,8 +128,8 @@ void watch_dir(char*path){
 	printf("i am supposed to be monitoring directory %s\n",path);
 }
 
-FILE * sync_open(char*path,const char* specifier){
-	path += PLUGIN_PREFIX_LEN;
+FILE * sync_open(const char*ipath){
+	char * path = ipath + PLUGIN_PREFIX_LEN;
 	return db_files_get(path,access_token);
 }
 

@@ -158,10 +158,10 @@ void watch_dir (char * dir_name)
 }*/
 
 
-FILE * sync_open (char * path, const char * specifier ){
+FILE * sync_open (char * path){
 	path += PLUGIN_PREFIX_LEN;
 	printf("opening %s\n",path);
-	return fopen(path,specifier);
+	return fopen(path, "rb");
 /*	FILE * fp = fopen(path,specifier);
 	if (fp == NULL) return -1;
 	if (first_open_files < num_open_files){
