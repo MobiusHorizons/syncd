@@ -21,7 +21,7 @@ char ** free_all(char ** array, int length){
 	return NULL;
 }
 
-int get_sync_paths(char *** paths, char *updated){
+int get_sync_paths(char *** paths, const char *updated){
 	char * base = testDir1; // "dropbox://" "testfolder/myfolder1/test.txt"
 	char * sync_base = testDir2; // "fs:///home/paul/DrobBox" "/test.txt"
 	char ** container = malloc(sizeof(char*));
@@ -38,7 +38,7 @@ int get_sync_paths(char *** paths, char *updated){
 	}
 }
 
-int get_plugin(char * path){
+int get_plugin(const char * path){
 	int i;
 	for (i = 0; i < num_plugins; i++){
 		const char * pfx = plugins[i].prefix;
@@ -47,7 +47,7 @@ int get_plugin(char * path){
 	return -1; // error
 }
 
-int cb(char * path, int mask){
+int cb(const char * path, int mask){
 	static char ** moved_from;
 	static int num_moved_from;
 	if (mask & S_MOVED_FROM){
@@ -82,7 +82,7 @@ int cb(char * path, int mask){
 		} else  
 		if (mask & S_CLOSE_WRITE ){
 			printf("trying to open file\n");
-			FILE * file = sync_open_file(path,"rb");
+			FILE * file = sync_open_file(path);
 			printf("file opened, file = %p\n",file);
 			printf("writing file ...\n");
 			if (file !=NULL){
@@ -181,13 +181,13 @@ void add_watch(char* path){
 int main(int argc, char** argv){
 	testDir2 = malloc(256);//alloca(256); //allocate 256 bytes for filename
 	testDir1 = malloc(256);//alloca(256); //allocate 256 bytes for filename
-	strcpy(testDir1, "dropbox:///");
-	strcpy(testDir2, "fs://"); // 2 is dest
+	strcpy(testDir1, "fs:///home/paul/gdrive_test");
+	strcpy(testDir2, "gdrive://"); // 2 is dest
 #if defined(WIN32)
-	strcat(testDir2, "/home/paul/DrDocx");
+//	strcat(testDir2, "/home/paul/DrDocx");
 #else
-	strcat(testDir2, getenv("HOME"));// we won't asume the first character is '\0'
-	strcat(testDir2, "/cmDropBox/");
+//	strcat(testDir2, getenv("HOME"));// we won't asume the first character is '\0'
+//	strcat(testDir2, "/cmDropBox/");
 #endif
 //	pthread_t *t;
 //	args_t args;

@@ -46,13 +46,13 @@
 #define S_DELETE		0x00000200
 #define S_ISDIR		0x40000000
 
-typedef void 	(*S_LISTEN    )	(int(*)(char*,int) );
-typedef FILE* 	(*S_OPEN_FILE )	(char *,const char*);
-typedef void 	(*S_CLOSE_FILE)	(FILE*             );
-typedef int 	(*S_WRITE     )	(char*,FILE *      );
-typedef int 	(*S_RM        )	(char*             );		
-typedef int 	(*S_MV        )	(char*,char*       ); 		
-typedef char* 	(*S_INIT      )	(                  ); 			
-typedef void 	(*S_WATCH_DIR )	(char*             ); 		
-typedef int	(*S_MKDIR     )	(char*             );
-typedef void	(*S_UNLOAD    ) (                  );
+typedef void 	(*S_LISTEN    )	(int(*)(const char*,int) );
+typedef FILE* 	(*S_OPEN_FILE )	(const char*             );
+typedef void 	(*S_CLOSE_FILE)	(FILE*                   );
+typedef int 	(*S_WRITE     )	(const char*,FILE *      );
+typedef int 	(*S_RM        )	(const char*             );		
+typedef int 	(*S_MV        )	(const char*,const char* );
+typedef char* 	(*S_INIT      )	(                        );
+typedef void 	(*S_WATCH_DIR )	(const char*             );
+typedef int	(*S_MKDIR     )	(const char*             );
+typedef void	(*S_UNLOAD    ) (                        );
