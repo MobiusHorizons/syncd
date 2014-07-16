@@ -15,7 +15,7 @@ PLUGIN_LIBS := $(foreach P,$(PLUGINS), plugins/libsync$(P).$(PLUGIN_EXT))
 
 all : sync$(EXEEXT) plugins
 sync$(EXEEXT): sync.c
-	$(CC) $(CFLAGS) $(CLIBS) sync.c -o sync$(EXEEXT)
+	$(CC) $(CFLAGS) sync.c $(CLIBS) -o sync$(EXEEXT)
 
 plugins : $(PLUGIN_LIBS)
 
