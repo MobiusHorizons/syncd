@@ -1,0 +1,5 @@
+/* edit this file to suit your needs, and rename it rules.json.
+ * note: you should replace {username} with your username
+{ 
+    "fs:///home/{username}/Documents" : ["dropbox://"],
+}

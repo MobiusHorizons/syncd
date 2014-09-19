@@ -6,6 +6,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
+#include "cache.h"
 
 #if defined(WIN32)
 	#include<windows.h>
@@ -52,7 +53,7 @@ typedef void 	(*S_CLOSE_FILE)	(FILE*                   );
 typedef int 	(*S_WRITE     )	(const char*,FILE *      );
 typedef int 	(*S_RM        )	(const char*             );		
 typedef int 	(*S_MV        )	(const char*,const char* );
-typedef char* 	(*S_INIT      )	(                        );
+typedef char* 	(*S_INIT      )	(utilities               );
 typedef void 	(*S_WATCH_DIR )	(const char*             );
-typedef int	(*S_MKDIR     )	(const char*             );
+typedef int     (*S_MKDIR     )	(const char*             );
 typedef void	(*S_UNLOAD    ) (                        );

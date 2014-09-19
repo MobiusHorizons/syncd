@@ -1,4 +1,6 @@
 #include "os.h"
+#include "cache.h"
+
 typedef struct {
 	Library ptr;
 	const char * prefix;
@@ -7,8 +9,7 @@ typedef struct {
 Plugin * plugins;
 int num_plugins;
 
-char * testDir1;
-char * testDir2; // these will be used for synchronization.
+json_object * rules;
 
 char ** free_all(char ** array, int length){
 	int i;
@@ -22,20 +23,32 @@ char ** free_all(char ** array, int length){
 }
 
 int get_sync_paths(char *** paths, const char *updated){
-	char * base = testDir1; // "dropbox://" "testfolder/myfolder1/test.txt"
-	char * sync_base = testDir2; // "fs:///home/paul/DrobBox" "/test.txt"
-	char ** container = malloc(sizeof(char*));
-	char * path = malloc(strlen(updated)- strlen(base) + strlen(sync_base) +2);
-	container[0] =path;
-	if (strncmp(base,updated,strlen(base))==0){ // if it matches the base
-		printf("%s%s\n",sync_base, updated + strlen(base));
-		sprintf(path,"%s%s",sync_base, updated + strlen(base));
-		*paths = container;
-		return 1;
-	}else {
-		*paths = NULL;
-		return 0;
-	}
+    json_object * r_paths = json_object_new_array();
+    int r_paths_length = 0;
+    int i;
+    json_object_object_foreach(rules,base,targets){
+        int array_length = json_object_array_length(targets);
+        for(i = 0; i < array_length; i++){
+            const char * sync_base = json_object_get_string(json_object_array_get_idx(targets,i));
+            if (strncmp(base,updated,strlen(base))==0){
+                char * path = malloc(strlen(updated)- strlen(base) + strlen(sync_base) + 2);
+                printf("%s%s",sync_base, updated + strlen(base));
+                sprintf(path,"%s%s",sync_base, updated + strlen(base));
+                json_object_array_put_idx(r_paths,r_paths_length++,json_object_new_string(path));
+            }
+        }
+    }   
+    char ** container = malloc(r_paths_length * sizeof(char*));
+    for(i = 0; i < r_paths_length; i++){
+        container[i] = strdup(
+            json_object_get_string(
+                json_object_array_get_idx(r_paths,i)
+            )
+        );
+    }
+    *paths = container;
+    json_object_put(r_paths);
+    return r_paths_length;
 }
 
 int get_plugin(const char * path){
@@ -60,7 +73,6 @@ int cb(const char * path, int mask){
 	char ** sync_path;
 	int po = get_plugin(path);
 	S_OPEN_FILE  sync_open_file = (S_OPEN_FILE)dlsym(plugins[po].ptr,"sync_open");
-//	S_CLOSE_FILE sync_close_file = (S_CLOSE_FILE) dlsym(plugins[po].ptr,"sync_close");
 	int num_paths = get_sync_paths(&sync_path,path);
 	printf(" errno = %d, and num_paths = %d\n",errno,num_paths);
 	for( i = 0; i < num_paths ; i++){
@@ -93,12 +105,10 @@ int cb(const char * path, int mask){
 			}
 		} else
 		if (mask & S_DELETE){
-//			int (*sync_rm)(char*) 
 			S_RM sync_rm = (S_RM) dlsym(plugins[pd].ptr,"sync_rm");
 			printf("deleted file %s, returned %d\n",sync_path[i],sync_rm(sync_path[i]));
 		} 
 		if (mask & S_MOVED_TO){
-//			int (*sync_mv)(char*,char*) 
 			S_MV sync_mv = (S_MV) dlsym(plugins[pd].ptr,"sync_mv");
 			printf("moved file %s to %s, returned %d\n",moved_from[i],sync_path[i],sync_mv(moved_from[i],sync_path[i]));
 		}
@@ -108,26 +118,10 @@ int cb(const char * path, int mask){
 	return 0;
 }
 
-/* //these were used for pthread stuff
-typedef struct{
-	void * fun;
-	void * args;
-} args_t;
-
-void runner(void* ptr){
-	args_t* args = (args_t * ) ptr;
-	if (args->fun){
-		void (*loader)( int(*)(char*,int)) = args->fun;
-		int (*arg)(char*,int) = args->args;
-		loader(arg);
-	}
-		
-}
-*/
-
 int loadPlugins(Plugin **return_plugins){
 	Plugin * plugins = NULL;
 	Plugin p;
+    utilities u = get_utilities();
 	int num_plugins = 0, i=0;
 	DIR * dp;
 	struct dirent *ep;
@@ -144,9 +138,12 @@ int loadPlugins(Plugin **return_plugins){
 				if (p.ptr != NULL){
 					plugins = realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
 					S_INIT init = (S_INIT) dlsym(p.ptr,"init");
-					p.prefix = init();
+					p.prefix = init(u);
+					printf ("prefix for plugin %d is '%s'\n",num_plugins,p.prefix);
 					plugins[num_plugins] = p;
 					num_plugins ++ ;
+				} else { 
+				printf ("%s is not a valid plugin\n",filename);
 				}
 				free(filename);
 #if defined(UNIX)
@@ -179,39 +176,21 @@ void add_watch(char* path){
 }
 
 int main(int argc, char** argv){
-	testDir2 = malloc(256);//alloca(256); //allocate 256 bytes for filename
-	testDir1 = malloc(256);//alloca(256); //allocate 256 bytes for filename
-	strcpy(testDir1, "fs:///home/paul/gdrive_test");
-	strcpy(testDir2, "gdrive://"); // 2 is dest
-#if defined(WIN32)
-//	strcat(testDir2, "/home/paul/DrDocx");
-#else
-//	strcat(testDir2, getenv("HOME"));// we won't asume the first character is '\0'
-//	strcat(testDir2, "/cmDropBox/");
-#endif
-//	pthread_t *t;
-//	args_t args;
-	printf("t1 = %s, t2 = %s\n",testDir1,testDir2);
+    rules = json_object_from_file("rules.json");
 	num_plugins = loadPlugins(&plugins);
 	printf("got plugins\n");
 	int i;
-//        t = (pthread_t *)malloc(sizeof(pthread_t) * num_plugins);
-	add_watch(testDir1);
-//	add_watch(testDir2);
+    json_object_object_foreach(rules,dir,val){
+        printf("dir=%s\n",dir);
+        add_watch(dir);
+    }
 	for ( i = 0; i < num_plugins; i++){
-		//void (*listen)( int(*)(char*,int)) = dlsym(plugins[i].ptr,"listen");
 		S_LISTEN listen =(S_LISTEN) dlsym(plugins[i].ptr,"sync_listen");
 		int pid = fork();
 		if (pid == 0){ // child
 			listen(cb);
 			exit(0);
 		}	
-//		args.fun = dlsym(plugins[i].ptr,"listen");
-//		args.args = cb;
-//		pthread_create(&t[i],NULL,(void*) &runner,(void*)&args);
 	}
-//	for ( i = 0; i < num_plugins; i++){
-//		pthread_join(t[i],NULL);
-//	}
 	unloadPlugins(plugins,num_plugins);
 }

@@ -2,8 +2,9 @@
 *.swp
 *.bak
 sync
-state.json
-old.json
 *.bak
+*.lo
+*.wo
+*.o
+*.json
 token_store.txt
-search_cache.json

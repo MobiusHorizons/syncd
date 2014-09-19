@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <sys/inotify.h>
 #include <sys/stat.h>
+#include "../cache.h"
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define EVENT_BUF_LEN	(1024 * (EVENT_SIZE + 16))
@@ -19,17 +20,19 @@
 FILE ** open_files;
 int num_open_files;
 int first_open_files;
+utilities utils;
 
 static int inotify_fd;
 static char* watchpoints[255]; // should use dynamic memory, but oh well
 static int num_watchpoints;
 
-char* init();
+char* init(utilities);
 void add_watch(char *);
 void watch_dir(char *);
 void sync_listen(int(*)(char*,int));
 
-char * init(){
+char * init(utilities u){
+    utils = u;
 	num_watchpoints = 0;
 	num_open_files = 0;
 	num_open_files = 0;

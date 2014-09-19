@@ -66,6 +66,7 @@ file_info * cache_lookup(const char * id){
 
 const char * cache_get_id(const char * path){
 	json_object * paths;
+	json_object * file;
 	if (!json_object_object_get_ex(cache,"paths",&paths)){
 		paths = json_object_new_object();
 		json_object_object_add(cache,"paths",paths);
