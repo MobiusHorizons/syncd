@@ -14,10 +14,10 @@ libsyncgdrive.so: gdrive.o libgdrive/gdrive_api.lo
 	ld -shared -o libsyncgdrive.so gdrive.o libgdrive/gdrive_api.lo -lcurl -ljson-c -lpthread -lrest
 
 %.o: %.c
-	$(CC) -fPIC -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+	$(CC) -O2 -fPIC -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 lib%.so: %.o
-	ld -shared  -o $@  $<
+	ld -shared  -O2 -lc -o $@  $<
 lib%.dll:%.o
 	$(CC) -shared -o $@ $< -Wl,--out-implib,$@.a
 clean:

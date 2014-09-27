@@ -16,10 +16,13 @@ PLUGIN_LIBS := $(foreach P,$(PLUGINS), plugins/libsync$(P).$(PLUGIN_EXT))
 
 all : sync$(EXEEXT) plugins
 
-sync$(EXEEXT): sync$(OBJ) cache$(OBJ)
-	$(CC) $(CLIBS) sync$(OBJ) cache$(OBJ) -o sync$(EXEEXT)
+sync$(EXEEXT): sync$(OBJ) cache$(OBJ) json_helper$(OBJ)
+	$(CC) $(CLIBS) sync$(OBJ) cache$(OBJ) json_helper$(OBJ) -lc -o sync$(EXEEXT)
 
-sync$(OBJ): sync.c cache.h
+json_helper$(OBJ): json_helper.c json_helper.h
+	$(CC) -c $(CFLAGS) json_helper.c -o json_helper$(OBJ)
+
+sync$(OBJ): sync.c cache.h json_helper.h
 	$(CC) -c $(CFLAGS) sync.c -o sync$(OBJ)
 
 cache$(OBJ): cache.c cache.h
@@ -27,6 +30,7 @@ cache$(OBJ): cache.c cache.h
 
 plugins : $(PLUGIN_LIBS)
 
-plugins/%.$(PLUGIN_EXT) :
+plugins/%.$(PLUGIN_EXT) : FORCE
 	$(MAKE) $*.$(PLUGIN_EXT) -C plugins 
 
+FORCE :

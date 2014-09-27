@@ -34,6 +34,46 @@ bool JSON_GET_BOOL(json_object * obj, char * object, bool def){
 }
 
 
+void update_cache(json_object * entry,const char *fname){
+    if (entry == NULL) { // the file was deleted
+        time_t modified;
+        time(&modified);
+        entry = json_object_new_object();
+        json_object_object_add(entry, "modified", json_object_new_int64((long long)modified));
+        json_object_object_add(entry, "size", json_object_new_int64(0));
+    }
+    //todo : add better error handling (what to do if size/modified doesn't exist)
+    json_object * cfile = utils.getFileCache(PLUGIN_PREFIX,fname);
+    if (cfile == NULL)
+        cfile = json_object_new_object();
+    printf("update_cache : %s\n",json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
+    struct tm mod = {0};
+    time_t modified;
+    const char * modified_s = JSON_GET_STRING(entry,"modified");
+    printf ("modified : %s\n",modified_s);
+    strptime(modified_s,"%a, %d %b %Y %H:%M:%S %z",&mod);
+    modified = mktime(&mod);
+    printf("modified : %d\n", modified);
+    json_object * size;
+    if (!json_object_object_get_ex(entry, "bytes", &size)){
+        printf("entry has no size object\n");
+    } 
+    size = json_object_new_int64(json_object_get_int64(size));
+    printf("size : %d\n",json_object_get_int64(size));
+
+    /*if (json_object_object_get_ex(cfile, "modified", NULL)){
+        json_object_object_del(cfile, "modified");
+        printf ("deleted the modified object\n");
+    } else {
+        printf ("did not have to delete modified\n");
+    }*/
+    json_object_object_add(cfile, "modified", json_object_new_int64((long long)modified));
+    json_object_object_add(cfile, "size", size);
+    printf("'%s' modified :%d, size: %d bytes\n", fname, modified, json_object_get_int64(size));
+
+    utils.addCache(PLUGIN_PREFIX, fname, cfile);
+}
+
 char * init(utilities u){
     utils = u;
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -84,16 +124,19 @@ void sync_listen(int (*cb)(const char*,int)){
 	
 		for (i = 0; i < json_object_array_length(entries); i++){ // look through all entries
 			entry = json_object_array_get_idx(entries,i);
-//			printf("%s\n",json_object_to_json_string(entry));
+			printf("%s\n",json_object_to_json_string(entry));
 			sprintf(path,"%s%s",PLUGIN_PREFIX,json_object_get_string(json_object_array_get_idx(entry,0)));
 			printf("path = %s\n",path);
 			if (json_object_array_length(entry)==2){
 				entry = json_object_array_get_idx(entry,1);
+                update_cache(entry, path + PLUGIN_PREFIX_LEN);
 				if (JSON_GET_BOOL(entry,"is_dir",false))
 					cb(path,0x40000100);
 				else 
 					cb(path,0x08);
 			} else {
+                // delete
+                update_cache(NULL,path + PLUGIN_PREFIX_LEN);
 				cb(path,0x200);
 			}
 

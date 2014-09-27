@@ -31,6 +31,25 @@ void add_watch(char *);
 void watch_dir(char *);
 void sync_listen(int(*)(char*,int));
 
+void update_file_cache(char * filename){
+    struct stat details;
+    json_object * cache_entry = utils.getFileCache(PLUGIN_PREFIX,filename);
+    if (cache_entry == NULL){
+        cache_entry = json_object_new_object();
+    }
+    if (stat(filename, &details) == -1){
+        printf("cannot stat '%s'\n",filename);
+    } else {
+        printf("size = %d; mtime= %d\n",details.st_size, details.st_mtime);
+        json_object_object_add(cache_entry,"size", json_object_new_int64(details.st_size));
+        json_object_object_add(cache_entry,"modified", json_object_new_int64((long long int)details.st_mtime));
+    }
+    utils.addCache(PLUGIN_PREFIX,filename,cache_entry);
+}
+
+
+
+
 char * init(utilities u){
     utils = u;
 	num_watchpoints = 0;
@@ -58,6 +77,8 @@ void sync_listen(int (*cb)( char*,int)){
 			if (event->len){
 				char * fp  = (char * ) malloc(PLUGIN_PREFIX_LEN + event->len + strlen(watchpoints[event->wd])+1);
 				sprintf(fp,"%s%s/%s",PLUGIN_PREFIX,watchpoints[event->wd],event->name);
+                char * filename = fp + PLUGIN_PREFIX_LEN;
+                update_file_cache(filename);
 				if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)){ // new directory created
 					printf("%.4x = %.4x\n",event->mask, (IN_CREATE|IN_ISDIR));
 					add_watch(fp + PLUGIN_PREFIX_LEN);

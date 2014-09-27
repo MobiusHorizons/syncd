@@ -1,5 +1,6 @@
 #include "cache.h"
 #include <string.h>
+#include <stdio.h>
 
 json_object * cache;
 json_object * config;
@@ -54,6 +55,19 @@ void addCache(const char * plugin_prefix, const char * fname, json_object * cach
     }
 }
 
+void updateFileCache(const char * plugin_prefix, const char * fname, json_object * changes){
+    json_object * fcache = getFileCache(plugin_prefix,fname);
+    if (fcache == NULL) {
+        fcache = json_object_new_object();
+        addCache(plugin_prefix, fname, fcache);
+    }
+    // add each field in changes
+    json_object_object_foreach(changes, key,val){
+        json_object_object_add(fcache, key, val);
+    }
+    push_cache();
+}
+
 void addConfig(const char * plugin_prefix, json_object * pconfig){
     update_config();
     json_object_object_add(config, plugin_prefix, pconfig);
@@ -64,6 +78,7 @@ utilities get_utilities(){
     utilities u;
     u.getCache = getCache;
     u.addCache = addCache;
+    u.updateFileCache = updateFileCache;
     u.getFileCache = getFileCache;
     u.getConfig = getConfig;
     u.addConfig = addConfig;
@@ -88,6 +103,7 @@ void update_config(){
 }
 
 void push_cache(){
+    printf("pushing cache\n");
     json_object_to_file("cache.json",cache);
 }
 

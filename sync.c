@@ -1,5 +1,6 @@
 #include "os.h"
 #include "cache.h"
+#include "json_helper.h"
 
 typedef struct {
 	Library ptr;
@@ -10,6 +11,26 @@ Plugin * plugins;
 int num_plugins;
 
 json_object * rules;
+
+json_object * json_copy(json_object ** to_ptr, char * name, json_object * from, json_object * def) {
+        json_object * obj;
+        json_object * to = * to_ptr;
+        if (json_object_object_get_ex(from, name, &obj)){
+            json_object_object_add(to,name,obj);
+        } else {
+            json_object_object_add(to,name,def);
+        }
+        return to;
+}
+
+json_object * getCacheDetails(int pnum, const char * path) {
+        const char * plugin_prefix = plugins[pnum].prefix;                                 
+        json_object * foc = getFileCache(plugin_prefix,path +strlen(plugin_prefix)); 
+        json_object * details = json_object_new_object();                            
+        json_copy(&details,"size",foc, json_object_new_int64(0));
+        json_copy(&details, "modified", foc,json_object_new_int64(0));
+        return details;
+}
 
 char ** free_all(char ** array, int length){
 	int i;
@@ -72,11 +93,22 @@ int cb(const char * path, int mask){
 	int i;
 	char ** sync_path;
 	int po = get_plugin(path);
+    json_object * orig_detail = getCacheDetails(po,path);
 	S_OPEN_FILE  sync_open_file = (S_OPEN_FILE)dlsym(plugins[po].ptr,"sync_open");
 	int num_paths = get_sync_paths(&sync_path,path);
 	printf(" errno = %d, and num_paths = %d\n",errno,num_paths);
 	for( i = 0; i < num_paths ; i++){
 		int pd = get_plugin(sync_path[i]);
+        json_object * dest_detail = getCacheDetails(pd,sync_path[i]);
+        if (
+                json_get_int(orig_detail, "size",1) == json_get_int(dest_detail, "size",2) &&
+                json_get_int(orig_detail, "modified",1)==json_get_int(dest_detail, "modified",2)
+           ) {
+            // this file is already in sync
+            continue;
+        } else {
+            updateFileCache(plugins[pd].prefix, sync_path[i] + strlen(plugins[pd].prefix),orig_detail);
+        }
 /*		if (file != NULL){
 			FILE * (*of)(char *,const char*) = dlsym(plugins[pd].ptr,"sync_open");
 	        	void (*cf)(FILE*) = dlsym(plugins[pd].ptr,"sync_close");
