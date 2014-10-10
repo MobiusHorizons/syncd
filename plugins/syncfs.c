@@ -11,6 +11,7 @@
 #include <sys/inotify.h>
 #include <sys/stat.h>
 #include "../cache.h"
+#include "../json_helper.h"
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define EVENT_BUF_LEN	(1024 * (EVENT_SIZE + 16))
@@ -31,19 +32,36 @@ void add_watch(char *);
 void watch_dir(char *);
 void sync_listen(int(*)(char*,int));
 
-void update_file_cache(char * filename){
+void update_file_cache(char * filename, int update){
     struct stat details;
     json_object * cache_entry = utils.getFileCache(PLUGIN_PREFIX,filename);
     if (cache_entry == NULL){
+        printf("cache was null for %s\n",filename);
         cache_entry = json_object_new_object();
     }
     if (stat(filename, &details) == -1){
         printf("cannot stat '%s'\n",filename);
     } else {
         printf("size = %d; mtime= %d\n",details.st_size, details.st_mtime);
-        json_object_object_add(cache_entry,"size", json_object_new_int64(details.st_size));
-        json_object_object_add(cache_entry,"modified", json_object_new_int64((long long int)details.st_mtime));
     }
+    long long int ver = 0;
+    if (update) {
+        ver = json_get_int(cache_entry, "version", 0);
+        if (json_get_int(cache_entry, "size", -1) != details.st_size &&
+            json_get_int(cache_entry, "modified", -1) != details.st_mtime
+           ) {
+            ver += update;
+        } else {
+            return;
+        }
+    } else {
+        ver = json_get_int(cache_entry, "next_version",1);
+        printf("next_Version = %d\n",ver);
+    }
+    json_object_object_add(cache_entry,"size", json_object_new_int64(details.st_size));
+    json_object_object_add(cache_entry,"modified", json_object_new_int64((long long int)details.st_mtime));
+    json_object_object_add(cache_entry, "version", json_object_new_int64(ver));
+    printf ("cache for file %s : %s\n",filename, json_object_to_json_string(cache_entry));
     utils.addCache(PLUGIN_PREFIX,filename,cache_entry);
 }
 
@@ -78,7 +96,7 @@ void sync_listen(int (*cb)( char*,int)){
 				char * fp  = (char * ) malloc(PLUGIN_PREFIX_LEN + event->len + strlen(watchpoints[event->wd])+1);
 				sprintf(fp,"%s%s/%s",PLUGIN_PREFIX,watchpoints[event->wd],event->name);
                 char * filename = fp + PLUGIN_PREFIX_LEN;
-                update_file_cache(filename);
+                update_file_cache(filename,1);
 				if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)){ // new directory created
 					printf("%.4x = %.4x\n",event->mask, (IN_CREATE|IN_ISDIR));
 					add_watch(fp + PLUGIN_PREFIX_LEN);
@@ -246,6 +264,7 @@ int sync_write(char * path, FILE * fo){
 	FILE * fd = fopen(path, "wb");	
 	char data[1024];
 	int out=0, in, t=0;
+    update_file_cache(path,0);
 	if (fd != NULL && fo != NULL){
 		while ( (in = fread(data,sizeof(char),1024,fo) ) > 0){
 			t+= in;

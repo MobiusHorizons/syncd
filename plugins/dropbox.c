@@ -6,6 +6,7 @@
 #include <string.h>
 #include <dropbox_api.h>
 #include "../cache.h"
+#include "../json_helper.h"
 
 #define PLUGIN_PREFIX "dropbox://"
 #define PLUGIN_PREFIX_LEN 10 // i counted
@@ -35,21 +36,31 @@ bool JSON_GET_BOOL(json_object * obj, char * object, bool def){
 
 
 void update_cache(json_object * entry,const char *fname){
+    json_object * cfile = utils.getFileCache(PLUGIN_PREFIX,fname);
+    if (cfile == NULL)
+        cfile = json_object_new_object();
+
+    const char * old_rev = json_get_string(cfile,"rev");
+    if (old_rev == NULL) old_rev = "initial";
+    long long int old_ver = json_get_int(cfile,"version",1);
+
     if (entry == NULL) { // the file was deleted
         time_t modified;
         time(&modified);
         entry = json_object_new_object();
         json_object_object_add(entry, "modified", json_object_new_int64((long long)modified));
+        json_object_object_add(entry, "rev", json_object_new_string("deleted"));
         json_object_object_add(entry, "size", json_object_new_int64(0));
     }
     //todo : add better error handling (what to do if size/modified doesn't exist)
-    json_object * cfile = utils.getFileCache(PLUGIN_PREFIX,fname);
-    if (cfile == NULL)
-        cfile = json_object_new_object();
     printf("update_cache : %s\n",json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
     struct tm mod = {0};
     time_t modified;
     const char * modified_s = JSON_GET_STRING(entry,"modified");
+    const char * new_rev = json_get_string(entry,"rev");
+    if (new_rev == NULL) new_rev == "blank";
+
+    if (strcmp(old_rev,new_rev)==0) old_ver++;
     printf ("modified : %s\n",modified_s);
     strptime(modified_s,"%a, %d %b %Y %H:%M:%S %z",&mod);
     modified = mktime(&mod);
@@ -61,12 +72,8 @@ void update_cache(json_object * entry,const char *fname){
     size = json_object_new_int64(json_object_get_int64(size));
     printf("size : %d\n",json_object_get_int64(size));
 
-    /*if (json_object_object_get_ex(cfile, "modified", NULL)){
-        json_object_object_del(cfile, "modified");
-        printf ("deleted the modified object\n");
-    } else {
-        printf ("did not have to delete modified\n");
-    }*/
+    json_copy(&cfile, "rev", entry, json_object_new_string("blank"));
+    json_object_object_add(cfile, "version", json_object_new_int64(old_ver));
     json_object_object_add(cfile, "modified", json_object_new_int64((long long)modified));
     json_object_object_add(cfile, "size", size);
     printf("'%s' modified :%d, size: %d bytes\n", fname, modified, json_object_get_int64(size));
@@ -107,6 +114,14 @@ void sync_unload(){
 
 void sync_listen(int (*cb)(const char*,int)){
 	static char * cursor;
+    /*{
+        json_object * jcursor;
+//        config = utils.getConfig(PLUGIN_PREFIX);
+        if (json_object_object_get_ex(config, "cursor", &jcursor)){
+            cursor = strdup(json_object_get_string(jcursor));
+        }
+    }*/
+    printf("cursor=%s\n",cursor);
 	bool has_more;
 	int i;
 	while (true){
@@ -115,6 +130,8 @@ void sync_listen(int (*cb)(const char*,int)){
 		json_object * delta = db_delta(cursor,access_token);
 		free(cursor);
 		cursor = strdup(JSON_GET_STRING(delta,"cursor"));
+        json_object_object_add(config, "cursor", json_object_new_string(cursor));
+        utils.addConfig(PLUGIN_PREFIX,config);
 		json_object* entry; 
 		json_object *entries;
 		if (!json_object_object_get_ex(delta,"entries",&entries)){
@@ -172,7 +189,7 @@ void watch_dir(char*path){
 }
 
 FILE * sync_open(const char*ipath){
-	char * path = ipath + PLUGIN_PREFIX_LEN;
+	const char * path = ipath + PLUGIN_PREFIX_LEN;
 	return db_files_get(path,access_token);
 }
 
@@ -188,6 +205,7 @@ int sync_write(char * path, FILE * fp){
 	printf("path = '%s', file = %p\n",path,fp);
 	path += PLUGIN_PREFIX_LEN;
 	json_object * metadata = db_files_put(path,access_token,fp);
+    update_cache(metadata,path);
 	json_object_put(metadata);
 }
 

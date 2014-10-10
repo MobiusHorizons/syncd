@@ -1,4 +1,4 @@
-PLUGINS := fs db 
+PLUGINS := fs db
 CFLAGS := -ggdb $(shell pkg-config --cflags json-c) 
 EXEEXT:=
 ifeq ($(CC),cc)
