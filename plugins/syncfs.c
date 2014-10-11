@@ -11,6 +11,7 @@
 #include <sys/inotify.h>
 #include <sys/stat.h>
 #include "../cache.h"
+#include "../json_helper.h"
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define EVENT_BUF_LEN	(1024 * (EVENT_SIZE + 16))
@@ -23,17 +24,56 @@ int first_open_files;
 utilities utils;
 
 static int inotify_fd;
-static char* watchpoints[255]; // should use dynamic memory, but oh well
+static char** watchpoints; 
 static int num_watchpoints;
+static int watchpoints_size;
 
 char* init(utilities);
 void add_watch(char *);
 void watch_dir(char *);
 void sync_listen(int(*)(char*,int));
 
+void update_file_cache(char * filename, int update){
+    struct stat details;
+    json_object * cache_entry = utils.getFileCache(PLUGIN_PREFIX,filename);
+    if (cache_entry == NULL){
+        printf("cache was null for %s\n",filename);
+        cache_entry = json_object_new_object();
+    }
+    if (stat(filename, &details) == -1){
+        printf("cannot stat '%s'\n",filename);
+    } else {
+        printf("size = %d; mtime= %d\n",details.st_size, details.st_mtime);
+    }
+    long long int ver = 0;
+    if (update) {
+        ver = json_get_int(cache_entry, "version", 0);
+        if (json_get_int(cache_entry, "size", -1) != details.st_size &&
+            json_get_int(cache_entry, "modified", -1) != details.st_mtime
+           ) {
+            ver += update;
+        } else {
+            return;
+        }
+    } else {
+        ver = json_get_int(cache_entry, "next_version",1);
+        printf("next_Version = %d\n",ver);
+    }
+    json_object_object_add(cache_entry,"size", json_object_new_int64(details.st_size));
+    json_object_object_add(cache_entry,"modified", json_object_new_int64((long long int)details.st_mtime));
+    json_object_object_add(cache_entry, "version", json_object_new_int64(ver));
+    printf ("cache for file %s : %s\n",filename, json_object_to_json_string(cache_entry));
+    utils.addCache(PLUGIN_PREFIX,filename,cache_entry);
+}
+
+
+
+
 char * init(utilities u){
     utils = u;
 	num_watchpoints = 0;
+    watchpoints_size = 1;
+    watchpoints = (char **) malloc(sizeof(char*));
 	num_open_files = 0;
 	num_open_files = 0;
 	inotify_fd = inotify_init();
@@ -58,6 +98,8 @@ void sync_listen(int (*cb)( char*,int)){
 			if (event->len){
 				char * fp  = (char * ) malloc(PLUGIN_PREFIX_LEN + event->len + strlen(watchpoints[event->wd])+1);
 				sprintf(fp,"%s%s/%s",PLUGIN_PREFIX,watchpoints[event->wd],event->name);
+                char * filename = fp + PLUGIN_PREFIX_LEN;
+                update_file_cache(filename,1);
 				if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)){ // new directory created
 					printf("%.4x = %.4x\n",event->mask, (IN_CREATE|IN_ISDIR));
 					add_watch(fp + PLUGIN_PREFIX_LEN);
@@ -73,8 +115,11 @@ void sync_listen(int (*cb)( char*,int)){
 void add_watch(char * dir){
 	int wp  = inotify_add_watch( inotify_fd, dir, IN_CREATE | IN_DELETE | IN_CLOSE_WRITE | IN_MOVE);
 	printf("adding directory: %s, wp = %d\n",dir,wp);
-	char * dir_local = malloc(strlen(dir)+1);
-	strcpy(dir_local,dir);
+	char * dir_local = strdup(dir);
+    while (wp >= watchpoints_size) {
+        watchpoints_size *= 2;
+        watchpoints = realloc(watchpoints, watchpoints_size * sizeof(char*));
+    }
 	watchpoints[wp] = dir_local;
 	num_watchpoints = wp;
 }
@@ -225,6 +270,7 @@ int sync_write(char * path, FILE * fo){
 	FILE * fd = fopen(path, "wb");	
 	char data[1024];
 	int out=0, in, t=0;
+    update_file_cache(path,0);
 	if (fd != NULL && fo != NULL){
 		while ( (in = fread(data,sizeof(char),1024,fo) ) > 0){
 			t+= in;

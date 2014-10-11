@@ -23,7 +23,7 @@
 	void dlclose(Library lib){
 		FreeLibrary(lib);
 	}
-	int fork(){
+    int fork(){
 		return 1; // cludge it for now
 	}
 #else

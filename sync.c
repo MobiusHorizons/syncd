@@ -1,5 +1,7 @@
 #include "os.h"
 #include "cache.h"
+#include <unistd.h>
+#include "json_helper.h"
 
 typedef struct {
 	Library ptr;
@@ -10,6 +12,16 @@ Plugin * plugins;
 int num_plugins;
 
 json_object * rules;
+
+
+json_object * getCacheDetails(int pnum, const char * path) {
+        const char * plugin_prefix = plugins[pnum].prefix;                                 
+        json_object * foc = getFileCache(plugin_prefix,path +strlen(plugin_prefix)); 
+        json_object * details = json_object_new_object();                            
+        json_copy(&details,"size",foc, json_object_new_int64(0));
+        json_copy(&details, "modified", foc,json_object_new_int64(0));
+        return details;
+}
 
 char ** free_all(char ** array, int length){
 	int i;
@@ -72,11 +84,36 @@ int cb(const char * path, int mask){
 	int i;
 	char ** sync_path;
 	int po = get_plugin(path);
+    json_object * orig_cache = json_object_get(
+        getFileCache(plugins[po].prefix, path + strlen(plugins[po].prefix))
+    );
+
+    if (orig_cache == NULL) orig_cache = json_object_new_object();
 	S_OPEN_FILE  sync_open_file = (S_OPEN_FILE)dlsym(plugins[po].ptr,"sync_open");
 	int num_paths = get_sync_paths(&sync_path,path);
 	printf(" errno = %d, and num_paths = %d\n",errno,num_paths);
 	for( i = 0; i < num_paths ; i++){
 		int pd = get_plugin(sync_path[i]);
+        char * dest_prefix = plugins[pd].prefix;
+        json_object * dest_cache = 
+            getFileCache(dest_prefix, sync_path[i] + strlen(dest_prefix));
+        if (dest_cache == NULL) dest_cache = json_object_new_object();
+//        json_object * dest_detail = getCacheDetails(pd,sync_path[i]);
+/*        if (
+                json_get_int(orig_detail, "size",1) == json_get_int(dest_detail, "size",2) &&
+                json_get_int(orig_detail, "modified",1)==json_get_int(dest_detail, "modified",2)
+           ) {*/
+        long long int orig_ver = json_get_int(orig_cache, "version",0);
+        printf("original version = %d;",orig_ver);
+        if ( json_get_int(dest_cache, "version", -1) >= orig_ver){
+            printf("destination version = %d\n",json_get_int(dest_cache, "version",-1));
+            // this file is already in sync
+            continue;
+        } else {
+            //updateFileCache(plugins[pd].prefix, sync_path[i] + strlen(plugins[pd].prefix),orig_detail);
+            json_object_object_add(dest_cache, "next_version", json_object_new_int64(orig_ver));
+            addCache(dest_prefix, sync_path[i] + strlen(dest_prefix),dest_cache);
+        }
 /*		if (file != NULL){
 			FILE * (*of)(char *,const char*) = dlsym(plugins[pd].ptr,"sync_open");
 	        	void (*cf)(FILE*) = dlsym(plugins[pd].ptr,"sync_close");
@@ -115,6 +152,7 @@ int cb(const char * path, int mask){
 	}
 	if (mask & S_MOVED_TO) moved_from = free_all(moved_from,num_moved_from);
 	sync_path = free_all(sync_path,num_paths);
+    json_object_put(orig_cache);
 	return 0;
 }
 
@@ -176,6 +214,17 @@ void add_watch(char* path){
 }
 
 int main(int argc, char** argv){
+    int plugin_to_run = -1;
+    { 
+        int opt;
+        while (( opt = getopt(argc,argv,"p:")) != -1){
+            printf("%c\n", opt);
+            if (opt == 'p'){
+                plugin_to_run = atoi(optarg);
+            }
+        }
+    }
+    printf ("plugin_to_run = %d\n",plugin_to_run);
     rules = json_object_from_file("rules.json");
 	num_plugins = loadPlugins(&plugins);
 	printf("got plugins\n");
@@ -184,7 +233,12 @@ int main(int argc, char** argv){
         printf("dir=%s\n",dir);
         add_watch(dir);
     }
-	for ( i = 0; i < num_plugins; i++){
+    // init shared memory
+    cache_init();
+    if (plugin_to_run != -1){
+        S_LISTEN listen =(S_LISTEN) dlsym(plugins[plugin_to_run].ptr,"sync_listen");
+        listen(cb);
+    } else 	for ( i = 0; i < num_plugins; i++){
 		S_LISTEN listen =(S_LISTEN) dlsym(plugins[i].ptr,"sync_listen");
 		int pid = fork();
 		if (pid == 0){ // child
