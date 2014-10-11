@@ -24,8 +24,9 @@ int first_open_files;
 utilities utils;
 
 static int inotify_fd;
-static char* watchpoints[255]; // should use dynamic memory, but oh well
+static char** watchpoints; 
 static int num_watchpoints;
+static int watchpoints_size;
 
 char* init(utilities);
 void add_watch(char *);
@@ -71,6 +72,8 @@ void update_file_cache(char * filename, int update){
 char * init(utilities u){
     utils = u;
 	num_watchpoints = 0;
+    watchpoints_size = 1;
+    watchpoints = (char **) malloc(sizeof(char*));
 	num_open_files = 0;
 	num_open_files = 0;
 	inotify_fd = inotify_init();
@@ -112,8 +115,11 @@ void sync_listen(int (*cb)( char*,int)){
 void add_watch(char * dir){
 	int wp  = inotify_add_watch( inotify_fd, dir, IN_CREATE | IN_DELETE | IN_CLOSE_WRITE | IN_MOVE);
 	printf("adding directory: %s, wp = %d\n",dir,wp);
-	char * dir_local = malloc(strlen(dir)+1);
-	strcpy(dir_local,dir);
+	char * dir_local = strdup(dir);
+    while (wp >= watchpoints_size) {
+        watchpoints_size *= 2;
+        watchpoints = realloc(watchpoints, watchpoints_size * sizeof(char*));
+    }
 	watchpoints[wp] = dir_local;
 	num_watchpoints = wp;
 }

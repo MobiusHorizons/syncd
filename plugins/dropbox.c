@@ -14,7 +14,7 @@
 /* globals */
 char * client_key    = "gmq6fs74fuw1ead";
 char * client_secret = "ia87pt0ep6dvb7y";
-const char * access_token;
+char * access_token;
 utilities utils;
 json_object * config;
 json_object * cache;
@@ -34,6 +34,13 @@ bool JSON_GET_BOOL(json_object * obj, char * object, bool def){
 	return def; 
 }
 
+char * safe_strdup(const char * str){
+    if (str != NULL){
+        return strdup(str);
+    } else {
+        return NULL;
+    }
+}
 
 void update_cache(json_object * entry,const char *fname){
     json_object * cfile = utils.getFileCache(PLUGIN_PREFIX,fname);
@@ -52,7 +59,6 @@ void update_cache(json_object * entry,const char *fname){
         json_object_object_add(entry, "rev", json_object_new_string("deleted"));
         json_object_object_add(entry, "size", json_object_new_int64(0));
     }
-    //todo : add better error handling (what to do if size/modified doesn't exist)
     printf("update_cache : %s\n",json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
     struct tm mod = {0};
     time_t modified;
@@ -60,11 +66,9 @@ void update_cache(json_object * entry,const char *fname){
     const char * new_rev = json_get_string(entry,"rev");
     if (new_rev == NULL) new_rev == "blank";
 
-    if (strcmp(old_rev,new_rev)==0) old_ver++;
-    printf ("modified : %s\n",modified_s);
+    if (strcmp(old_rev,new_rev)<=0) old_ver++;
     strptime(modified_s,"%a, %d %b %Y %H:%M:%S %z",&mod);
     modified = mktime(&mod);
-    printf("modified : %d\n", modified);
     json_object * size;
     if (!json_object_object_get_ex(entry, "bytes", &size)){
         printf("entry has no size object\n");
@@ -72,7 +76,14 @@ void update_cache(json_object * entry,const char *fname){
     size = json_object_new_int64(json_object_get_int64(size));
     printf("size : %d\n",json_object_get_int64(size));
 
-    json_copy(&cfile, "rev", entry, json_object_new_string("blank"));
+//    json_copy(&cfile, "rev", entry, json_object_new_string("blank"));
+    {
+        const char *rev;
+        if ((rev = json_get_string(entry,"rev"))==NULL){
+            rev = "blank";
+        }
+        json_object_object_add(cfile, "rev", json_object_new_string(rev));
+    }
     json_object_object_add(cfile, "version", json_object_new_int64(old_ver));
     json_object_object_add(cfile, "modified", json_object_new_int64((long long)modified));
     json_object_object_add(cfile, "size", size);
@@ -88,7 +99,7 @@ char * init(utilities u){
     if (config == NULL){
         config = json_object_new_object();
     }
-    access_token = JSON_GET_STRING(config, "access_token");
+    access_token = safe_strdup(json_get_string(config, "access_token"));    
     FILE * state = fopen("access_token.txt", "r");
     if (access_token == NULL){
         char  token[128];
@@ -96,7 +107,7 @@ char * init(utilities u){
         if (fgets(token,128,stdin) == NULL) exit(1);
         int len = strlen(token);
         if (token[len-1] == '\n') token[len-1] = '\0';
-        access_token = db_authorize_token(token,client_key,client_secret);
+        access_token = safe_strdup(db_authorize_token(token,client_key,client_secret));
         if (access_token == NULL) exit(1);
         json_object * at = json_object_new_string(access_token);
         printf("config = %s\n",json_object_to_json_string(config));
@@ -114,13 +125,13 @@ void sync_unload(){
 
 void sync_listen(int (*cb)(const char*,int)){
 	static char * cursor;
-    /*{
+    {
         json_object * jcursor;
-//        config = utils.getConfig(PLUGIN_PREFIX);
+        config = utils.getConfig(PLUGIN_PREFIX);
         if (json_object_object_get_ex(config, "cursor", &jcursor)){
             cursor = strdup(json_object_get_string(jcursor));
         }
-    }*/
+    }
     printf("cursor=%s\n",cursor);
 	bool has_more;
 	int i;
@@ -128,15 +139,29 @@ void sync_listen(int (*cb)(const char*,int)){
 	do {
 		char path[PATH_MAX];
 		json_object * delta = db_delta(cursor,access_token);
-		free(cursor);
-		cursor = strdup(JSON_GET_STRING(delta,"cursor"));
-        json_object_object_add(config, "cursor", json_object_new_string(cursor));
-        utils.addConfig(PLUGIN_PREFIX,config);
+        {
+            const char * c;
+            if ((c = json_get_string(delta,"cursor"))!= NULL){
+                free (cursor);
+                cursor = strdup(c);
+                config = utils.getConfig(PLUGIN_PREFIX);
+                json_object_object_add(config, "cursor", json_object_new_string(cursor));
+                utils.addConfig(PLUGIN_PREFIX,config);
+            } else {
+                printf("delta = %s\n",json_object_to_json_string(delta));
+                 
+                free(cursor);
+                cursor = NULL;
+                continue;
+            }
+        }
 		json_object* entry; 
 		json_object *entries;
 		if (!json_object_object_get_ex(delta,"entries",&entries)){
 			printf("no delta['entries']\n");
-			return;
+            free(cursor);
+            cursor=NULL;
+			continue;
 		}
 	
 		for (i = 0; i < json_object_array_length(entries); i++){ // look through all entries
@@ -145,7 +170,7 @@ void sync_listen(int (*cb)(const char*,int)){
 			sprintf(path,"%s%s",PLUGIN_PREFIX,json_object_get_string(json_object_array_get_idx(entry,0)));
 			printf("path = %s\n",path);
 			if (json_object_array_length(entry)==2){
-				entry = json_object_array_get_idx(entry,1);
+				entry = json_object_get(json_object_array_get_idx(entry,1));
                 update_cache(entry, path + PLUGIN_PREFIX_LEN);
 				if (JSON_GET_BOOL(entry,"is_dir",false))
 					cb(path,0x40000100);
@@ -157,23 +182,25 @@ void sync_listen(int (*cb)(const char*,int)){
 				cb(path,0x200);
 			}
 
-			json_object_put(entry); // free the entry
+			//json_object_put(entry); // free the entry
 		}
 
 		has_more = JSON_GET_BOOL(delta,"has_more",false);
 
-		json_object_put(entries); // free
+		//json_object_put(entries); // free
 		json_object_put(delta); 	
 	} while (has_more);
 
 	bool changes;
 	do {// wait for updates
-		printf("waiting for changes, 120 sec\n");
-		json_object * resp = db_longpoll(cursor,120);
+        if (cursor == NULL) break;
+        json_object * resp;
+        printf("waiting for changes, 120 sec\n");
+        resp = db_longpoll(cursor,120);
 		printf("%s\n",json_object_to_json_string(resp));
 		changes = JSON_GET_BOOL(resp,"changes",false);
 		json_object_put(resp);
-	} while (!changes);
+	} while (!changes && cursor != NULL);
 	}
 }
 

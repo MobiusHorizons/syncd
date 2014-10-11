@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include "json_helper.h"
 
-#define DEBUG
 typedef struct {
 	Library ptr;
 	const char * prefix;
@@ -242,11 +241,7 @@ int main(int argc, char** argv){
     } else 	for ( i = 0; i < num_plugins; i++){
 		S_LISTEN listen =(S_LISTEN) dlsym(plugins[i].ptr,"sync_listen");
 		int pid = fork();
-        if (pid != 0) printf ("forked child %d\n sleeping 15",pid);
 		if (pid == 0){ // child
-#ifdef DEBUG
-            sleep(15);
-#endif
 			listen(cb);
 			exit(0);
 		}	
