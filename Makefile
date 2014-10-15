@@ -17,7 +17,7 @@ PLUGIN_LIBS := $(foreach P,$(PLUGINS), plugins/libsync$(P).$(PLUGIN_EXT))
 all : sync$(EXEEXT) plugins
 
 sync$(EXEEXT): sync$(OBJ) cache$(OBJ) json_helper$(OBJ)
-	$(CC) $(CLIBS) sync$(OBJ) cache$(OBJ) json_helper$(OBJ) -lc -o sync$(EXEEXT)
+	$(CC) sync$(OBJ) cache$(OBJ) json_helper$(OBJ) $(CLIBS) -lc -o sync$(EXEEXT)
 
 json_helper$(OBJ): json_helper.c json_helper.h
 	$(CC) -c $(CFLAGS) json_helper.c -o json_helper$(OBJ)
