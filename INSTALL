@@ -3,9 +3,9 @@ Installation depends on librest which can be cloned from
 https://github.com/MobiusHorizons/librest.git or 
 git@github.com:MobiusHorizons/librest.git
 
-after building and installing that you can build this. ( simple make/make install )
-choose which plugins to build in the top line of the Makefile. the default is 'fs db' which is the filesystem plugin and dropbox.
-at this time you can also try the gdrive plugin, but it is still not working fully.
+After building and installing that, you can build this. ( simple make/make install )
+Choose which plugins to build in the top line of the Makefile. the default is 'fs db' which is the filesystem plugin and dropbox.
+At this time you can also try the gdrive plugin, but it is still not working fully.
 
 If make does not come back with any errors, copy rules.json.example to rules.json and edit to your liking.
 finally to run, run ./sync in the same directory.
