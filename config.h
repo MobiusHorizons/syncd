@@ -108,7 +108,7 @@
 #define HAVE_LIBPTHREAD 1
 
 /* Define to 1 if you have the `rest' library (-lrest). */
-#define HAVE_LIBREST 1
+/* #undef HAVE_LIBREST */
 
 /* Define to 1 if you have the <limits.h> header file. */
 #define HAVE_LIMITS_H 1
@@ -218,7 +218,7 @@
 /* #undef LTDL_DLOPEN_DEPLIBS */
 
 /* Define to the system default library search path. */
-#define LT_DLSEARCH_PATH "/lib:/usr/lib:/usr/lib/i386-linux-gnu/libfakeroot:/usr/lib/i386-linux-gnu/mesa-egl:/usr/lib/i386-linux-gnu/mesa:/lib/i386-linux-gnu:/usr/lib/i386-linux-gnu:/lib/i686-linux-gnu:/usr/lib/i686-linux-gnu:/usr/local/lib"
+#define LT_DLSEARCH_PATH "/lib:/usr/lib:/usr/lib/libfakeroot:/usr/lib32:/home/paul/syncd/lib"
 
 /* The archive extension */
 #define LT_LIBEXT "a"
