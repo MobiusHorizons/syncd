@@ -1,0 +1,8 @@
+dropbox
+*.exe
+*.o
+*.dll
+*.so
+*.txt
+*.a
+*.zip

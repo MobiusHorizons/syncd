@@ -2145,6 +2145,8 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+# remove b/c no config.h?
+AC_INIT_AUTOMAKE(subdir-objects)
 
 ac_config_headers="$ac_config_headers config.h"
 
@@ -5976,6 +5978,4 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
-# remove b/c no config.h?
-# AC_INIT_AUTOMAKE([syncd], [0.2])
 

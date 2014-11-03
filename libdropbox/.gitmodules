@@ -1,0 +1,3 @@
+[submodule "librest"]
+	path = librest
+	url = https://github.com/MobiusHorizons/librest.git

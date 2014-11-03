@@ -1,7 +1,4 @@
-AUTOMAKE_OPTIONS = foreign
+# AM_CFLAGS=-Wall # -I/usr/local/include -DVERSION=\"$(VERSION)\" -DPROG="\"$(PACKAGE)\""
+# AM_LDFLAGS=-L/usr/local/lib -lcurl -lpthread -ldl
 
-CFLAGS=-Wall -I/usr/local/include -DVERSION=\"$(VERSION)\" -DPROG="\"$(PACKAGE)\""
-LDFLAGS=-L/usr/local/lib -lcurl -lpthread -ldl
-
-bin_PROGRAMS = sync
-sync_SOURCES = sync.c cache.c cache.h json_helper.c json_helper.h
+SUBDIRS = libltdl libdropbox librest src libexec
