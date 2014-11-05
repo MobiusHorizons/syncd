@@ -5,7 +5,7 @@
 #else
 #	include <curl/curl.h>
 #endif
-#include <json-c/json.h>
+#include <json.h>
 #include <stdbool.h>
 #include "dropbox_urls.h"
 #include "librest/rest.h"

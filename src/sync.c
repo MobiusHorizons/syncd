@@ -1,8 +1,7 @@
 #include "os.h"
 #include "cache.h"
 #include <unistd.h>
-#include <ltdl.h>
-#include "../libltdl/ltdl.h"
+#include "ltdl.h"
 #include "json_helper.h"
 
 typedef struct {

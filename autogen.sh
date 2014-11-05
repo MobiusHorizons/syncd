@@ -1,3 +1,5 @@
 #!/bin/sh
-libtoolize --ltdl -c -i
+aclocal
+automake -a
+glibtoolize --ltdl -c -i
 autoreconf --no-recursive
