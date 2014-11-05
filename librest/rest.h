@@ -5,7 +5,7 @@
 #else
 #	include <curl/curl.h>
 #endif
-#include <json.h>
+#include <json-c/json.h>
 #include <stdbool.h>
 #include "buffer.h"
 

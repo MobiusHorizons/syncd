@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([syncd],[0.2],[bec8@students.calvin.edu])
+AC_INIT([syncd], [0.2], [bec8@students.calvin.edu])
 # remove b/c no config.h?
 # AM_INIT_AUTOMAKE([1.14 foreign no-define])
 AM_INIT_AUTOMAKE([subdir-objects])
@@ -30,7 +30,9 @@ AC_CHECK_LIB([json-c], [json_object_new_object])
 
 # libtdl
 LT_CONFIG_LTDL_DIR([libltdl])
-LTDL_INIT([subproject])
+AC_CONFIG_MACRO_DIR([m4])
+LTDL_INIT([recursive])
+AC_CONFIG_FILES([libltdl/Makefile])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
@@ -49,6 +51,5 @@ AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([ftruncate mkdir strchr strdup strerror])
 
-AC_CONFIG_FILES([Makefile libdropbox/Makefile librest/Makefile libexec/Makefile src/Makefile ])
-AC_OUTPUT
+AC_OUTPUT(Makefile libdropbox/Makefile librest/Makefile libexec/Makefile src/Makefile )
 

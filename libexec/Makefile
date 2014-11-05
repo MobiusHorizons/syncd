@@ -76,13 +76,17 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-build_triplet = x86_64-apple-darwin13.4.0
-host_triplet = x86_64-apple-darwin13.4.0
+build_triplet = x86_64-unknown-linux-gnu
+host_triplet = x86_64-unknown-linux-gnu
 subdir = libexec
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/argz.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltdl.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -129,6 +133,12 @@ am__v_lt_1 =
 libsyncdb_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libsyncdb_la_LDFLAGS) $(LDFLAGS) -o $@
+libsyncfs_la_LIBADD =
+am_libsyncfs_la_OBJECTS = syncfs.lo ../src/json_helper.lo
+libsyncfs_la_OBJECTS = $(am_libsyncfs_la_OBJECTS)
+libsyncfs_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(libsyncfs_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_$(V))
 am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
 am__v_P_0 = false
@@ -163,8 +173,8 @@ AM_V_CCLD = $(am__v_CCLD_$(V))
 am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libsyncdb_la_SOURCES)
-DIST_SOURCES = $(libsyncdb_la_SOURCES)
+SOURCES = $(libsyncdb_la_SOURCES) $(libsyncfs_la_SOURCES)
+DIST_SOURCES = $(libsyncdb_la_SOURCES) $(libsyncfs_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -190,29 +200,29 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /var/empty/src/syncd/missing aclocal-1.14
+ACLOCAL = ${SHELL} /home/paul/src/syncd/missing aclocal-1.14
 ALLOCA = 
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
 AR = ar
-ARGZ_H = argz.h
-AUTOCONF = ${SHELL} /var/empty/src/syncd/missing autoconf
-AUTOHEADER = ${SHELL} /var/empty/src/syncd/missing autoheader
-AUTOMAKE = ${SHELL} /var/empty/src/syncd/missing automake-1.14
-AWK = awk
+ARGZ_H = 
+AUTOCONF = ${SHELL} /home/paul/src/syncd/missing autoconf
+AUTOHEADER = ${SHELL} /home/paul/src/syncd/missing autoheader
+AUTOMAKE = ${SHELL} /home/paul/src/syncd/missing automake-1.14
+AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -I/usr/local/opt/libtool/include -I/usr/local/Cellar/json-c/0.11/include/json-c
+CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
 DLLTOOL = false
-DSYMUTIL = dsymutil
+DSYMUTIL = 
 DUMPBIN = 
-ECHO_C = \c
-ECHO_N = 
+ECHO_C = 
+ECHO_N = -n
 ECHO_T = 
 EGREP = /usr/bin/grep -E
 EXEEXT = 
@@ -224,34 +234,34 @@ INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
-LD = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld
-LDFLAGS = -L/usr/local/Cellar/json-c/0.11/lib -L/usr/local/opt/libtool/lib
-LIBADD_DL =  
+LD = /usr/bin/ld -m elf_x86_64
+LDFLAGS = 
+LIBADD_DL = -ldl 
 LIBADD_DLD_LINK = 
-LIBADD_DLOPEN = 
+LIBADD_DLOPEN = -ldl
 LIBADD_SHL_LOAD = 
 LIBLTDL = -lltdl
-LIBOBJS =  ${LIBOBJDIR}mktime$U.o
-LIBS = -ljson-c -lpthread -lltdl -lcurl -ljson-c
+LIBOBJS = 
+LIBS = -ldl -ljson-c -lpthread -lltdl -lcurl 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
-LIPO = lipo
+LIPO = 
 LN_S = ln -s
 LTDLDEPS = 
 LTDLINCL = 
 LTDLOPEN = libltdl
-LTLIBOBJS =  ${LIBOBJDIR}mktime$U.lo
+LTLIBOBJS = 
 LT_CONFIG_H = config.h
-LT_DLLOADERS =  libltdl/dlopen.la
-LT_DLPREOPEN = -dlpreopen libltdl/dlopen.la 
-MAKEINFO = ${SHELL} /var/empty/src/syncd/missing makeinfo
+LT_DLLOADERS =  dlopen.la
+LT_DLPREOPEN = -dlpreopen dlopen.la 
+MAKEINFO = ${SHELL} /home/paul/src/syncd/missing makeinfo
 MANIFEST_TOOL = :
-MKDIR_P = .././install-sh -c -d
-NM = /usr/bin/nm
-NMEDIT = nmedit
-OBJDUMP = false
+MKDIR_P = /usr/bin/mkdir -p
+NM = /usr/bin/nm -B
+NMEDIT = 
+OBJDUMP = objdump
 OBJEXT = o
-OTOOL = otool
-OTOOL64 = :
+OTOOL = 
+OTOOL64 = 
 PACKAGE = syncd
 PACKAGE_BUGREPORT = bec8@students.calvin.edu
 PACKAGE_NAME = syncd
@@ -266,10 +276,10 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = strip
 VERSION = 0.2
-abs_builddir = /var/empty/src/syncd/libexec
-abs_srcdir = /var/empty/src/syncd/libexec
-abs_top_builddir = /var/empty/src/syncd
-abs_top_srcdir = /var/empty/src/syncd
+abs_builddir = /home/paul/src/syncd/libexec
+abs_srcdir = /home/paul/src/syncd/libexec
+abs_top_builddir = /home/paul/src/syncd
+abs_top_srcdir = /home/paul/src/syncd
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_DUMPBIN = 
@@ -279,53 +289,51 @@ am__quote =
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
 bindir = ${exec_prefix}/bin
-build = x86_64-apple-darwin13.4.0
+build = x86_64-unknown-linux-gnu
 build_alias = 
 build_cpu = x86_64
-build_os = darwin13.4.0
-build_vendor = apple
+build_os = linux-gnu
+build_vendor = unknown
 builddir = .
 datadir = ${datarootdir}
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-host = x86_64-apple-darwin13.4.0
+host = x86_64-unknown-linux-gnu
 host_alias = 
 host_cpu = x86_64
-host_os = darwin13.4.0
-host_vendor = apple
+host_os = linux-gnu
+host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /var/empty/src/syncd/install-sh
+install_sh = ${SHELL} /home/paul/src/syncd/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
 localstatedir = ${prefix}/var
-ltdl_LIBOBJS =  argz.o
-ltdl_LTLIBOBJS =  argz.lo
+ltdl_LIBOBJS =  lt__strl.o
+ltdl_LTLIBOBJS =  lt__strl.lo
 mandir = ${datarootdir}/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /var/empty/syncd
+prefix = /home/paul/syncd
 program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
-subdirs =  libltdl
-sys_symbol_underscore = yes
+sys_symbol_underscore = no
 sysconfdir = ${prefix}/etc
 target_alias = 
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-pkglib_LTLIBRARIES = libsyncdb.la
-
-#libsyncfs_la_SOURCES = syncfs.c ../src/json_helper.c
-#libsyncfs_la_LDFLAGS = -avoid-version -module -shared -export-dynamic
+pkglib_LTLIBRARIES = libsyncfs.la libsyncdb.la
+libsyncfs_la_SOURCES = syncfs.c ../src/json_helper.c
+libsyncfs_la_LDFLAGS = -avoid-version -module -shared -export-dynamic
 libsyncdb_la_SOURCES = dropbox.c ../src/json_helper.c
 libsyncdb_la_LIBADD = ../libdropbox/libdropbox.la
 libsyncdb_la_LDFLAGS = -avoid-version -module -shared -export-dynamic
@@ -410,6 +418,9 @@ clean-pkglibLTLIBRARIES:
 libsyncdb.la: $(libsyncdb_la_OBJECTS) $(libsyncdb_la_DEPENDENCIES) $(EXTRA_libsyncdb_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libsyncdb_la_LINK) -rpath $(pkglibdir) $(libsyncdb_la_OBJECTS) $(libsyncdb_la_LIBADD) $(LIBS)
 
+libsyncfs.la: $(libsyncfs_la_OBJECTS) $(libsyncfs_la_DEPENDENCIES) $(EXTRA_libsyncfs_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libsyncfs_la_LINK) -rpath $(pkglibdir) $(libsyncfs_la_OBJECTS) $(libsyncfs_la_LIBADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f ../src/*.$(OBJEXT)
@@ -420,6 +431,7 @@ distclean-compile:
 
 include ../src/$(DEPDIR)/json_helper.Plo
 include ./$(DEPDIR)/dropbox.Plo
+include ./$(DEPDIR)/syncfs.Plo
 
 .c.o:
 	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\

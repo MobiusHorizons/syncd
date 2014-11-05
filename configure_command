@@ -1,1 +1,0 @@
-LDFLAGS="-L/usr/local/Cellar/json-c/0.11/lib -L/usr/local/opt/libtool/lib" LIBS="-ljson-c" CFLAGS="-I/usr/local/opt/libtool/include -I/usr/local/Cellar/json-c/0.11/include/json-c" LIBTOOL="/usr/local/bin/glibtool" ./configure --prefix="$HOME/syncd"
