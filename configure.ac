@@ -51,5 +51,5 @@ AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([ftruncate mkdir strchr strdup strerror])
 
-AC_OUTPUT(Makefile libdropbox/Makefile librest/Makefile libexec/Makefile src/Makefile )
+AC_OUTPUT(Makefile librest/Makefile libdropbox/Makefile libexec/Makefile src/Makefile )
 
