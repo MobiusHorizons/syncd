@@ -1,7 +1,7 @@
 #ifndef __CACHE_H_
 #define __CACHE_H_
 
-#include <json-c/json.h>
+#include <json.h>
 
 /* Definition of functions provided by sync 
  */

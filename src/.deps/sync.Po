@@ -34,7 +34,7 @@ sync.o: sync.c /usr/include/stdc-predef.h os.h /usr/include/stdio.h \
  /usr/include/json-c/arraylist.h /usr/include/json-c/json_util.h \
  /usr/include/json-c/json_tokener.h \
  /usr/include/json-c/json_object_iterator.h \
- /usr/include/json-c/json_c_version.h /usr/include/unistd.h \
+ /usr/include/json-c/json_c_version.h ../config.h /usr/include/unistd.h \
  /usr/include/bits/posix_opt.h /usr/include/bits/environments.h \
  /usr/include/bits/confname.h /usr/include/getopt.h /usr/include/ltdl.h \
  /usr/include/libltdl/lt_system.h /usr/include/libltdl/lt_error.h \
@@ -183,6 +183,8 @@ cache.h:
 /usr/include/json-c/json_object_iterator.h:
 
 /usr/include/json-c/json_c_version.h:
+
+../config.h:
 
 /usr/include/unistd.h:
 

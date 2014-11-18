@@ -1,6 +1,6 @@
 #ifndef __JSON_HELPER_H_
 #define __JSON_HELPER_H_
-#include <json-c/json.h>
+#include <json.h>
 
 json_object * json_copy(json_object **, const char *, json_object *, json_object *);
 
