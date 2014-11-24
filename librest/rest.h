@@ -1,10 +1,6 @@
 #ifndef __LIBREST_H__
 #define __LIBREST_H__
-#ifdef WIN32
-#	include "curl/include/curl/curl.h"	
-#else
-#	include <curl/curl.h>
-#endif
+#include <curl/curl.h>
 #include <json-c/json.h>
 #include <stdbool.h>
 #include "buffer.h"

@@ -27,6 +27,14 @@ AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rest], [rest_build_param])
 # json-c:
 AC_CHECK_LIB([json-c], [json_object_new_object])
+# libuv
+AC_CHECK_LIB([uv], [uv_run])
+
+# inotify:
+AC_CHECK_HEADER(sys/inotify.h, 
+                [AC_DEFINE(HAVE_INOTIFY_H, 1, 
+                 [Define to 1 if you have <sys/inotify.h>.])],
+                [AC_MSG_NOTICE([No inotify, using libuv as a backup])])
 
 # libtdl
 LT_CONFIG_LTDL_DIR([libltdl])

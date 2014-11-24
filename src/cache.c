@@ -28,7 +28,7 @@ void cache_init(){
     int fd = open("./cache.json",O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
     ftruncate(fd,cacheLength);
     printf("fd = %d\n",fd);
-    cacheFile = (char *) mmap(NULL, cacheLength, 
+    cacheFile = (char *) mmap(NULL, cacheLength,
             PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, fd, 0);
     if (cacheFile == MAP_FAILED ) errx(1,"failed");
 }
@@ -105,7 +105,7 @@ void addConfig(const char * plugin_prefix, json_object * pconfig){
     json_object_put(pconfig);
 }
 
-utilities get_utilities(){
+utilities get_utility_functions(){
     utilities u;
     u.getCache = getCache;
     u.addCache = addCache;
@@ -141,7 +141,7 @@ void push_cache(){
     //json_object_to_file("cache.json",cache);
     const char * string = "";
     if (cache != NULL ) string = json_object_to_json_string(cache);
-    printf("cache.json length = %d\n",strlen(string));
+    printf("cache.json length = %d\n",(int)strlen(string));
     if (strlen(string) > cacheLength){
         printf("the string is too long\n");
     }

@@ -3,11 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-buffer buffer_init(buffer b, size_t size){
+buffer buffer_init(size_t size){
 /*	if (b.data != NULL && b.size != 0){
 		free(b.data);
 	}*/
-	b.data = (char*)malloc(size);
+	buffer b;
+	if (size == 0){
+		b.data = NULL;
+	} else {
+		b.data = (char*)malloc(size);
+	}
 	b.size = size;
 	return b;
 }
@@ -38,7 +43,7 @@ int buffer_read(buffer *b, char *data, size_t length){
 }
 
 buffer buffer_from_string(char * string){
-	buffer b = buffer_init(b,0);
+	buffer b = buffer_init(0);
 	b.data = strdup(string);
 	b.size = strlen(string);
 	return b;
@@ -53,7 +58,7 @@ buffer buffer_free(buffer b){
 
 buffer buffer_clone(buffer b){
 	buffer n;
-	n = buffer_init(n,b.size);
+	n = buffer_init(b.size);
 	memcpy(n.data,b.data,b.size);
 	return n;
 }

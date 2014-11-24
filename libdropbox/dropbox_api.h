@@ -1,10 +1,6 @@
 #ifndef __DB_API_H__
 #define __DB_API_H__
-#ifdef WIN32
-#	include "curl/include/curl/curl.h"	
-#else
-#	include <curl/curl.h>
-#endif
+#include <curl/curl.h>
 #include <json-c/json.h>
 #include <stdbool.h>
 #include "dropbox_urls.h"

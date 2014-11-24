@@ -9,7 +9,7 @@
 #ifdef WIN32
 	#include <io.h>
 	#include <fcntl.h>
-	#define pipe(fds) _pipe(fds,4096, _O_BINARY) 
+	#define pipe(fds) _pipe(fds,4096, _O_BINARY)
 	#define SSL_CERT char SSL_CA_PATH[PATH_MAX]; getcwd(SSL_CA_PATH,PATH_MAX); strcat(SSL_CA_PATH,"\\ca-bundle.crt"); curl_easy_setopt(curl, CURLOPT_CAINFO, SSL_CA_PATH); //printf("SSL_CA_PATH = '%s'\n",SSL_CA_PATH);
 #else
 	#define SSL_CERT
@@ -29,7 +29,7 @@ int rest_build_header(char ** header, const char * name, const char * value){
 
 char * rest_build_url(char ** params, char* base){
 	if (params == NULL) return strdup(base);
-	char * url; 
+	char * url;
 	int num_params;
 	int i;
 	int len = 0;
@@ -86,11 +86,12 @@ void * run_curl(void* ptr){
 		fclose(args->file);
 		free(args->url);
 	}
+    return NULL;
 }
 
 size_t ReadFileCB( void *contents, size_t size, size_t nmemb, void *userp){
 	FILE * file = (FILE*) userp;
-	if (file == NULL) file == stdin;
+	if (file == NULL) file = stdin;
 	return fread(contents,size,nmemb,file);
 }
 
@@ -99,29 +100,31 @@ size_t ReadBufferCB( void *contents, size_t size, size_t nmemb, void *userp){
 		size_t realsize = size * nmemb;
 		buffer * data = (buffer*) userp;
 		realsize = buffer_read(data,contents,realsize);
-		printf("size = %d,contents = %.*s\n",realsize,realsize,(char*)contents);
+		printf("size = %d,contents = %.*s\n",(int)realsize,(int)realsize,(char*)contents);
 		return realsize;
 	}
+    return 0;
 }
 
 static size_t WriteFileCB(void * contents, size_t size, size_t nmemb, void * userp){
 	FILE * file = (FILE*) userp;
-	if (file == NULL) file == stdout;
+	if (file == NULL) file = stdout;
 	return fwrite(contents, size, nmemb, file);
 }
 
 static size_t WriteBufferCB(void *contents, size_t size, size_t nmemb, void *userp)
-{ 
+{
 	if (userp!= NULL){
 		size_t realsize = size * nmemb;
 		buffer * data = (buffer*) userp;
 		*data = buffer_append(*data,contents, realsize);
 		return realsize;
 	}
+    return 0;
 }
 
 static size_t WriteLinesCB(void *contents, size_t size, size_t nmemb, void *userp)
-{ 
+{
 	if (userp!= NULL){
 		int i = 0;
 		char ** lines = (char**) userp;
@@ -137,6 +140,7 @@ static size_t WriteLinesCB(void *contents, size_t size, size_t nmemb, void *user
 			return size*nmemb; // ignore
 		}
 	}
+    return 0;
 }
 
 FILE * rest_get	(char ** params, char * url){
@@ -168,7 +172,7 @@ buffer rest_get_buffer (char ** params, char * url){
 	char * full_url = rest_build_url(params, url);
 	CURL * curl = curl_easy_init();
 	SSL_CERT
-	buffer data = buffer_init(data,0);
+	buffer data = buffer_init(0);
 	curl_easy_setopt(curl,CURLOPT_URL,full_url);
 //	printf("url = %s\n",full_url);
 	curl_easy_setopt(curl,CURLOPT_WRITEDATA,&data);
@@ -187,9 +191,9 @@ buffer  rest_post (char ** params, char * url){
 	CURL * curl = curl_easy_init();
 	char * post = rest_build_url(params,"");
 	char * escaped_url = rest_escape(url);
-	
+
 	SSL_CERT
-	buffer data = buffer_init(data,0);
+	buffer data = buffer_init(0);
 	curl_easy_setopt(curl,CURLOPT_URL,escaped_url);
 	int i = 0;
 	curl_easy_setopt(curl,CURLOPT_POSTFIELDS,post+1);
@@ -214,7 +218,7 @@ buffer  rest_post_headers (char ** params, char ** headers, char * url){
 	}
 	char * escaped_url = rest_escape(url);
 	SSL_CERT
-	buffer data = buffer_init(data,0);
+	buffer data = buffer_init(0);
 	curl_easy_setopt(curl,CURLOPT_URL,escaped_url);
 	curl_easy_setopt(curl,CURLOPT_POSTFIELDS,post);
 	curl_easy_setopt(curl,CURLOPT_HTTPHEADER, slist);
@@ -233,7 +237,7 @@ buffer  rest_post_headers (char ** params, char ** headers, char * url){
 int rest_post_all(rest_args args){
 	CURL * curl = curl_easy_init();
 	char * post = NULL;
-	char * escaped_url = NULL; 
+	char * escaped_url = NULL;
 	char content_length[100];
 	char * content_type = NULL;
 	struct curl_slist *slist = NULL;
@@ -254,7 +258,7 @@ int rest_post_all(rest_args args){
 	if (args.content != NULL){
 		curl_easy_setopt(curl,CURLOPT_POSTFIELDS,args.content->data);
 		rest_build_header(&content_type,"Content-Type",args.content_type);
-		sprintf(content_length,"Content-Length: %d",args.content->size);
+		sprintf(content_length,"Content-Length: %d",(int)args.content->size);
 		slist = curl_slist_append(slist,content_type);
 		slist = curl_slist_append(slist,content_length);
 	}
@@ -290,7 +294,7 @@ int rest_post_all(rest_args args){
 buffer rest_put_file (char** params, char* url, FILE * in){
 	CURL * curl = curl_easy_init();
 	SSL_CERT
-	buffer data = buffer_init(data,0);
+	buffer data = buffer_init(0);
 	char * full_url = rest_build_url(params,url);
 //	printf("%s\n",full_url);
 	curl_easy_setopt(curl,CURLOPT_URL,full_url);
@@ -304,7 +308,7 @@ buffer rest_put_file (char** params, char* url, FILE * in){
 	free(full_url);
 	curl_easy_cleanup(curl);
 	if (res != CURLE_OK){
-		printf("res = %d, data = %.*s\n",res,data.size,data.data);
+		printf("res = %d, data = %.*s\n",res,(int)data.size,data.data);
 		data = buffer_free(data);
 	}
 	return data;
@@ -314,7 +318,7 @@ buffer rest_put_headers (char** params,char** headers, char* url, FILE * in){
 	CURL * curl = curl_easy_init();
 	SSL_CERT
 	struct curl_slist *slist = NULL;
-	buffer data = buffer_init(data,0);
+	buffer data = buffer_init(0);
 	char * full_url = rest_build_url(params,url);
 	int i;
 //	printf("%s\n",full_url);
@@ -337,9 +341,8 @@ buffer rest_put_headers (char** params,char** headers, char* url, FILE * in){
 	curl_slist_free_all(slist);
 	curl_easy_cleanup(curl);
 	if (res != CURLE_OK){
-		printf("res = %d, data = %.*s\n",res,data.size,data.data);
+		printf("res = %d, data = %.*s\n",res,(int)data.size,data.data);
 		data = buffer_free(data);
 	}
 	return data;
 }
-

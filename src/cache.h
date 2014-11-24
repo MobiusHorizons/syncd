@@ -3,7 +3,7 @@
 
 #include <json-c/json.h>
 
-/* Definition of functions provided by sync 
+/* Definition of functions provided by sync
  */
 
 
@@ -12,7 +12,7 @@ void cache_init();
 
 
 json_object * getCache(const char * plugin_prefix);
-json_object * getFileCache(const char * plugin_prefix, const char * fname); 
+json_object * getFileCache(const char * plugin_prefix, const char * fname);
 json_object * getConfig(const char * plugin_prefix);
 
 void addCache(const char * plugin_prefix, const char * fname, json_object * cache_entry);
@@ -37,7 +37,7 @@ typedef struct {
     ADDCONFIG addConfig;
 } utilities;
 
-utilities   get_utilities();
+utilities get_utility_functions();
 
 
 #endif

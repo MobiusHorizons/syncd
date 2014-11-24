@@ -38,4 +38,10 @@ double json_get_double(json_object * obj, char * name){
     return NAN;
 }
 
-
+/*JSON_HELPER JSON(json_object * obj){
+  JSON_HELPER jh;
+  jh.type = obj->type;
+  jh.data = (void * )obj;
+  jh.parse = NULL;
+  jh.get_int
+}*/
