@@ -169,7 +169,7 @@ void sync_listen(int (*cb)(const char*,int)){
 			printf("%s\n",json_object_to_json_string(entry));
 			//printf("path = %s\n",path);
 
-			if (json_object_is_type(json_object_array_get_idx(entry,1), json_type_null)){
+			if (! json_object_is_type(json_object_array_get_idx(entry,1), json_type_null)){
 					entry = json_object_get(json_object_array_get_idx(entry,1));
 					sprintf(path,"%s%s",PLUGIN_PREFIX,json_get_string(entry, "path"));
 					json_object* path_map = json_object_new_object();
