@@ -158,7 +158,7 @@ int loadPlugins(Plugin **return_plugins){
 	int num_plugins = 0, i=0;
 	DIR * dp;
 	struct dirent *ep;
-	dp = opendir("./plugins/");
+	dp = opendir("/usr/lib/syncd/"); //TODO this should pull from config.h
 	if (dp != NULL)
 	{
 		while ((ep = readdir (dp))){
