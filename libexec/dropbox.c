@@ -11,6 +11,15 @@
 #define PLUGIN_PREFIX "dropbox://"
 #define PLUGIN_PREFIX_LEN 10 // i counted
 
+
+#if defined(_WIN32)
+    #define URL_OPEN_CMD "start \"\""
+#elif defined(__APPLE__) && defined(__MACH__)
+    #define URL_OPEN_CMD "open"
+#else
+    #define URL_OPEN_CMD "xdg-open"                                     
+#endif
+
 /* globals */
 char * client_key    = "gmq6fs74fuw1ead";
 char * client_secret = "ia87pt0ep6dvb7y";
@@ -103,7 +112,11 @@ char * init(init_args args){
     FILE * state = fopen("access_token.txt", "r");
     if (access_token == NULL){
         char  token[128];
-        printf("go to https://www.dropbox.com/1/oauth2/authorize?response_type=code&client_id=%s and copy the code here\n",client_key);
+        char cmd[512];
+        sprintf(cmd, "%s \"%s?response_type=code&client_id=%s\"",URL_OPEN_CMD,OAUTH_2_AUTH,client_key);
+        //printf("go to https://www.dropbox.com/1/oauth2/authorize?response_type=code&client_id=%s and copy the code here\n",client_key);
+        printf("Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
+        system(cmd);
         if (fgets(token,128,stdin) == NULL) exit(1);
         int len = strlen(token);
         if (token[len-1] == '\n') token[len-1] = '\0';
