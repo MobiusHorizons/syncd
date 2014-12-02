@@ -25,9 +25,10 @@ void uvfs_updates(uv_fs_event_t *handle, const char *filename, int events, int s
 void add_watch(char * dir_name){
   uv_fs_event_t *fs_event_req = malloc(sizeof(uv_fs_event_t));
   fs_event_req->data = strdup(dir_name);
-  uv_fs_event_init(loop, fs_event_req);
+//  uv_fs_event_init(loop, fs_event_req);
   // The recursive flag watches subdirectories too.
-  uv_fs_event_start(fs_event_req, uvfs_updates, dir_name, UV_FS_EVENT_RECURSIVE);
+//  uv_fs_event_start(fs_event_req, uvfs_updates, dir_name, UV_FS_EVENT_RECURSIVE);
+  uv_fs_event_init(loop,fs_event_req,dir_name,uvfs_updates,UV_FS_EVENT_RECURSIVE);
 
 }
 
