@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <err.h>
 #include <unistd.h>
+#include <limits.h>
 
 json_object * cache;
 json_object * config;
@@ -25,7 +26,10 @@ void push_cache();
 void cache_init(){
     //set up shared memory
     cacheLength = 100 * 1024 * 1024; // 100 MB for now.
-    int fd = open("./cache.json",O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
+    char path[PATH_MAX];
+    strcpy(path, getenv("HOME"));
+    strcat(path, "/.cache.json");
+    int fd = open(path,O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
     ftruncate(fd,cacheLength);
     printf("fd = %d\n",fd);
     cacheFile = (char *) mmap(NULL, cacheLength,
@@ -130,7 +134,10 @@ void update_cache(){
 
 void update_config(){
     if (config != NULL) json_object_put(config);
-    config = json_object_from_file("config.json");
+    char path[PATH_MAX];
+    strcpy(path,getenv("HOME"));
+    strcat(path,"/.config.json");
+    config = json_object_from_file(path);
     if (config == NULL){
         config = json_object_new_object();
     }
@@ -151,5 +158,8 @@ void push_cache(){
 }
 
 void push_config(){
-    json_object_to_file("config.json",config);
+    char path[PATH_MAX];
+    strcpy(path,getenv("HOME"));
+    strcat(path,"/.config.json");
+    json_object_to_file(path,config);
 }

@@ -158,7 +158,8 @@ int loadPlugins(Plugin **return_plugins){
 	int num_plugins = 0, i=0;
 	DIR * dp;
 	struct dirent *ep;
-	dp = opendir("/usr/lib/syncd/"); //TODO this should pull from config.h
+    printf("looking for plugins in %s\n", LIBDIR );
+	dp = opendir(LIBDIR ); //TODO this should pull from config.h
 	char configPath[PATH_MAX];
 	strcpy(configPath, getenv("HOME"));
 	strcat(configPath, "/.config/syncd");
@@ -225,7 +226,10 @@ int main(int argc, char** argv){
 		}
 	}
 	printf ("plugin_to_run = %d\n",plugin_to_run);
-	rules = json_object_from_file("rules.json");
+    char path[PATH_MAX];
+    strcpy(path,getenv("HOME"));
+    strcat(path,"/.syncd-rules.json");
+	rules = json_object_from_file(path);
 	// init shared memory
 	cache_init();
 	num_plugins = loadPlugins(&plugins);
