@@ -23,8 +23,7 @@ int(*update_event)(const char*,int);
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
-# ifdef SOMETHING_THAT_IS_NOT_DEFINED
-//HAVE_INOTIFY_H
+#ifdef HAVE_INOTIFY_H
 #   include "linuxfs.c"
 # else
 #   include "uvfs.c"
