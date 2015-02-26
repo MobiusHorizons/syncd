@@ -6,3 +6,10 @@ Synchronization service for linux with plugins for various endpoints hopefully d
 more info can be found in the [wiki](https://github.com/MobiusHorizons/syncd/wiki "Wiki")
 
 Build/installation instructions can be found in the INSTALL file or on the wiki
+
+At the moment, this appears to work:
+$ rm -r m4
+$ aclocal && autoconf && ./autogen.sh
+$ ./configure
+$ make
+# make install
