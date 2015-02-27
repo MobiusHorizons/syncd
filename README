@@ -13,3 +13,5 @@ $ aclocal && autoconf && ./autogen.sh
 $ ./configure
 $ make
 # make install
+$ cp rules.json.example ~/.syncd-rules.json #copy sample rules into place
+$ vim ~/.syncd-rules.json #configure rules to suit
