@@ -3,7 +3,8 @@
 
 #include "json_helper.h"
 #include "cache.h"
-
+#include <stdio.h>
+#include <ltdl.h>
 #define S_CLOSE_WRITE   0x00000008
 #define S_CLOSE_NOWRITE 0x00000010
 #define S_CLOSE         (S_CLOSE_WRITE | S_CLOSE_NOWRITE)
@@ -47,6 +48,10 @@ typedef struct{
   /* properties */
   char *      prefix;
   int         prefix_len;
+  lt_dlhandle dlhandle;
 } plugin;
 
+
+//int loadPlugins(plugin ***plugins,
+//                char     *dir);
 #endif

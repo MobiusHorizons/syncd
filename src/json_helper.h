@@ -1,6 +1,7 @@
 #ifndef __JSON_HELPER_H_
 #define __JSON_HELPER_H_
 #include <json-c/json.h>
+#include <stdbool.h>
 
 struct JSON_HELPER;
 
@@ -27,8 +28,14 @@ typedef struct JSON_HELPER JSON_HELPER;
 
 json_object * json_copy(json_object **, const char *, json_object *, json_object *);
 
-const char * json_get_string(json_object * obj, char * name);
-long long int json_get_int(json_object * obj, char * name, long long int def);
-double json_get_double(json_object * obj, char * name);
+const char * json_get_string(json_object * obj, const char * name);
+long long int json_get_int(json_object * obj, const char * name, long long int def);
+double json_get_double(json_object * obj, const char * name);
+bool json_get_bool(json_object * obj, const char * name, bool def);
+
+void json_add_string(json_object * obj, const char * name, const char * val);
+void json_add_int(json_object * obj, const char * name, long long int val);
+void json_add_double(json_object * obj, const char * name, double val);
+void json_add_bool(json_object * obj, const char * name, bool val);
 
 #endif

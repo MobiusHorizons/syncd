@@ -169,11 +169,11 @@ int loadPlugins(Plugin **return_plugins){
 #if defined(UNIX)
 			if(ep->d_type == DT_REG){
 #endif
-				char * filename = malloc(strlen(ep->d_name) + strlen("plugins/")+1);
-				sprintf(filename,"plugins/%s",ep->d_name);
+				char * filename = (char*) malloc(strlen(ep->d_name) + strlen(LIBDIR)+2);
+				sprintf(filename,"%s/%s",LIBDIR,ep->d_name);
 				p.ptr = lt_dlopen(filename);
 				if (p.ptr != NULL){
-					plugins = realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
+					plugins = (Plugin *) realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
 					S_INIT init = (S_INIT) lt_dlsym(p.ptr,"init");
 					p.prefix = init(args);
 					printf ("prefix for plugin %d is '%s'\n",num_plugins,p.prefix);
