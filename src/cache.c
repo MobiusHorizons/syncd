@@ -99,6 +99,14 @@ void addCache(const char * plugin_prefix, const char * fname, json_object * entr
     json_object_put(cache_entry);
 }
 
+void updateCache(const char * plugin_prefix, json_object * pcache){
+    json_object_get(pcache);
+    update_cache();
+    json_object_object_add(cache, plugin_prefix, pcache);
+    push_cache();
+    json_object_put(pcache);
+}
+
 void updateFileCache(const char * plugin_prefix, const char * fname, json_object * changes){
     json_object * fcache = getFileCache(plugin_prefix,fname);
     if (fcache == NULL) {
@@ -125,6 +133,7 @@ utilities get_utility_functions(){
     u.getCache = getCache;
     u.addCache = addCache;
     u.updateFileCache = updateFileCache;
+    u.updateCache = updateCache;
     u.getFileCache = getFileCache;
     u.getConfig = getConfig;
     u.addConfig = addConfig;

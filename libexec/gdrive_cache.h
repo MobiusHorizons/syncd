@@ -5,7 +5,7 @@
 #include "../src/plugin.h"
 #include "../src/json_helper.h"
 
-void gdrive_cache_init(utilities u, bool (*)(json_object*));
+void gdrive_cache_init(utilities u);
 json_object * get_metadata(const char *id, const char *path);
 char * get_id(const char * path);
 char * get_path(const char * id);

@@ -19,25 +19,46 @@ bool check_error(json_object* obj);
 
 
 /* globals */
-//json_object * cache;
-//json_object * config;
+json_object * local_cache;
+utilities global_utils;
+utilities local_utils;
 utilities utils;
 
-/* structs */
-/*typedef struct{
-	const char* title;
-	bool is_dir;
-} file_info;
-*/
-/* cache functions*/
-/*void cache_remove(const char* id){
-	json_object * files;
-	if (json_object_object_get_ex(cache,"files",&files)){
-		json_object_object_del(files,id);
-	}
+json_object * lc_get(){
+    if (local_cache == NULL){
+        local_cache = json_object_get(global_utils.getCache(PLUGIN_PREFIX));
+    }
+    if (local_cache == NULL){
+        local_cache = json_object_new_object();
+    }
+    return local_cache;
 }
-*/
 
+void lc_addCache(const char * plugin_prefix, const char * fname, json_object * entry){
+    json_object * c = lc_get();
+    if (fname != NULL && strlen(fname) != 0 && entry != NULL){
+        printf("adding cache entry for %s\n", fname);
+        //puts(json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
+        json_object * cache_entry = json_object_get(entry);
+        json_object_object_add(c, fname, cache_entry);
+        //json_object_put(cache_entry);
+    }
+}
+
+json_object * lc_getCache(const char * plugin_prefix){
+    return lc_get();
+}
+
+json_object * lc_getFileCache(const char * plugin_prefix, const char * fname){
+    json_object * pcache = lc_get();
+    json_object * out;
+    if (json_object_object_get_ex(pcache, fname, &out)){
+        return out;
+    } else {
+        return NULL;
+    }
+}
+    
 int update_cache(const char  * id,
                  const char  * path,
                  json_object * new_metadata){
@@ -47,8 +68,8 @@ int update_cache(const char  * id,
 	    long long int new_mtime = json_get_int(new_metadata, "modified", 1);
         if (old_mtime >= new_mtime ) return 0;
     } else {
-//        if (id) utils.addCache(PLUGIN_PREFIX, id, json_object_get(new_metadata));
-//        if (path) utils.addCache(PLUGIN_PREFIX, path, json_object_get(new_metadata));
+        if (id) utils.addCache(PLUGIN_PREFIX, id, json_object_get(new_metadata));
+        if (path) utils.addCache(PLUGIN_PREFIX, path, json_object_get(new_metadata));
     }
 
     // else metadata has changed.
@@ -72,35 +93,12 @@ int update_cache(const char  * id,
     return 1;
 }
 
-
-
-/*
-void cache_add(const char *id,file_info fi){
-	json_object * files;
-	json_object * file;
-	if (!json_object_object_get_ex(cache,"files",&files)){
-		files = json_object_new_object();
-		json_object_object_add(cache,"files",files);
-	}
-	json_object_object_add(file,"title",json_object_new_string(fi.title));
-	json_object_object_add(file,"is_dir",json_object_new_boolean(fi.is_dir));
-	json_object_object_add(files,id,file);
+json_object * gdrive_files_put(const char * path, FILE * file){
+    if (path == NULL) return NULL;
+    char * local_file = strdup(path);
+    json_object * metadata = json_object_new_object();
 }
-
-file_info * cache_lookup(const char * id){
-	json_object * files = utils.getCache(PLUGIN_PREFIX);
-	if (json_object_object_get_ex(files,id,&files)){
-		file_info * fi = malloc(sizeof(file_info));
-		fi->title = JSON_GET_STRING(files,"title");
-		fi->is_dir = JSON_GET_BOOL(files,"is_dir",false);
-		return fi;
-	} else {
-		return NULL;
-	}
-}
- */
-
-
+    
 
 char * login(){
 	json_object * config = utils.getConfig(PLUGIN_PREFIX);
@@ -140,7 +138,7 @@ char * login(){
 }
 
 void reauth(){
-  	json_object * config = utils.getConfig(PLUGIN_PREFIX);
+  	json_object * config = json_object_get(utils.getConfig(PLUGIN_PREFIX));
 	json_object * auth;
 	char * key;
 
@@ -188,17 +186,16 @@ bool check_error(json_object* obj){
 * returns plugin prefix (gdrive://)
 * performs any startup tasks such as authentication
 */
-char * init(init_args args){
-	utils = args.utils;
-    gdrive_cache_init(args.utils, &check_error);
-	/*cache = utils.getCache(PLUGIN_PREFIX);
-	if (cache == NULL){
-		cache = json_object_new_object();
-	}*/
-	const char * key;
-	//if (cache == NULL) cache = json_object_new_object();
-	curl_global_init(CURL_GLOBAL_DEFAULT);
-	json_object * auth;
+const char * init(init_args args){
+	global_utils = local_utils = utils = args.utils;
+    gdrive_cache_init(args.utils);
+
+    /* set up local cache utils */
+    local_utils.addCache = lc_addCache;
+    local_utils.getCache = lc_getCache;
+    local_utils.getFileCache = lc_getFileCache;
+	
+    curl_global_init(CURL_GLOBAL_DEFAULT);
 	gdrive_init("null",NULL);
 	reauth();
 	return PLUGIN_PREFIX;
@@ -214,6 +211,11 @@ void sync_unload(){
 }
 
 void get_updates(int (*cb)(const char*,int)){
+    /* switch to local utils */
+    {
+        utils = local_utils;
+        gdrive_cache_init(utils);
+    }
 	char * last_change;
 	char * next_page_token = NULL;
 	json_object* lc;
@@ -229,12 +231,13 @@ void get_updates(int (*cb)(const char*,int)){
 	do {
         json_object * changes;
         do {
-            changes = gdrive_get_changes(next_page_token,last_change,1000);
+            changes = gdrive_get_changes(next_page_token,last_change,600);
         } while(check_error(changes));
         free(last_change);
         last_change = NULL;
 
         free(next_page_token);
+        next_page_token = NULL;
         const char * temp = json_get_string(changes,"nextPageToken");
         if (temp != NULL) next_page_token = strdup(temp);
         int i;
@@ -244,7 +247,7 @@ void get_updates(int (*cb)(const char*,int)){
             printf("largestchangeID = %ld\n",temp);
             char  largestChangeId[128];
             sprintf(largestChangeId,"%ld",temp+1);
-            config = utils.getConfig(PLUGIN_PREFIX);
+            config = json_object_get(utils.getConfig(PLUGIN_PREFIX));
             json_object_object_add(config,"largest_change",json_object_new_string(largestChangeId));
             utils.addConfig(PLUGIN_PREFIX,config);
         }
@@ -253,6 +256,26 @@ void get_updates(int (*cb)(const char*,int)){
             for ( i = 0; i < json_object_array_length(items);i++){
                 json_object * change = json_object_array_get_idx(items,i);
                 const char * id    = json_get_string(change,"fileId");
+                if (
+                    !json_get_bool(change,"deleted",false) &&
+                    json_object_object_get_ex(change,"file",&change)
+                    ){
+                        bool can_sync = json_object_object_get_ex(change,"downloadUrl", NULL);
+                        if (! can_sync){
+                            // this will end up as a link, but for now ignore.
+                            continue;
+                        }
+                        if (strcmp(json_get_string(change, "mimeType"), "application/vnd.google-apps.folder") == 0){
+                            printf("folder id '%s'\n", id);
+                            update_cache(id, NULL, update_metadata(id,json_object_get(change)));
+                        }
+                }
+            }
+
+            for ( i = 0; i < json_object_array_length(items);i++){
+                json_object * change = json_object_array_get_idx(items,i);
+                const char * id    = json_get_string(change,"fileId");
+                printf("working on changeid %d, number %d\n",json_get_int(change, "id", 0), i);
                 if (
                     !json_get_bool(change,"deleted",false) &&
                     json_object_object_get_ex(change,"file",&change)
@@ -319,10 +342,20 @@ void get_updates(int (*cb)(const char*,int)){
             }
             json_object_put(changes);
         } while (next_page_token != NULL);
+    /* push changes back to shared cache */
+    {
+        utils = global_utils;
+        if (local_cache != NULL){
+            utils.updateCache(PLUGIN_PREFIX, json_object_get(local_cache));
+            json_object_put(local_cache);
+            local_cache = NULL;
+        }
+    }
     json_object_object_foreach(aggregate_changes,path,mask_j){
         cb(path, json_object_get_int64(mask_j));
     }
     json_object_put(aggregate_changes);
+    
 	free(next_page_token);
 }
 
@@ -356,15 +389,14 @@ void watch_dir(char * path){
 
 FILE * sync_open(char * path){
 	path += PLUGIN_PREFIX_LEN;
-	char * id = get_id(path);
 	FILE * file;
-
+    json_object * fcache = get_metadata(NULL,path);
+    const char * id = json_get_string(fcache, "id");
   	do {
-		file = gdrive_get(id);
+		file = gdrive_get(id, fcache);
 		if (file == NULL) reauth();
 	} while (file == NULL);
 
-	free(id);
 	return file;
 }
 

@@ -40,7 +40,8 @@ char * safe_strdup(const char * in){
 }
 
 json_object * gdrive_get_metadata(const char * file_id){
-	char * params[2];
+    printf("GDRIVE_GET_META: had to get medatada for id '%s'\n", file_id);
+    char * params[2];
 	char * url = malloc(strlen("https://www.googleapis.com/drive/v2/files/") + strlen(file_id) + 1);
 	sprintf(url, "https://www.googleapis.com/drive/v2/files/%s",file_id);
 //	printf("url = %s\n",url);
@@ -52,7 +53,10 @@ json_object * gdrive_get_metadata(const char * file_id){
     } while (resp.data == NULL);
 	free(params[0]);
 	free(url);
-	return json_tokener_parse(resp.data);
+	json_object * g_metadata = json_tokener_parse(resp.data);
+    printf("GDRIVE: \n%s\n", resp.data);
+//    free(resp.data);
+    return g_metadata;
 }
 
 /*
@@ -72,24 +76,39 @@ json_object * gdrive_get_metadata(const char * file_id){
 }
 */
 
-FILE * gdrive_get (char * file_id){
-	json_object * metadata = gdrive_get_metadata(file_id);
-  printf("Metadata: %s\n",json_object_to_json_string(metadata));
+FILE * gdrive_get (char * file_id, json_object * fcache){
+    FILE * ret = NULL;
+    json_object * metadata = fcache;
+    printf("Metadata: %s\n",json_object_to_json_string(metadata));
 	char * download_url = safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
-  if (download_url == NULL) return NULL;
-	download_url = realloc(download_url,
-		strlen(download_url)
-		+ strlen("&access_token=")
-		+ strlen(KEY)
-		+ 1
-	);
-	strcat(download_url, "&access_token=");
-	strcat(download_url, KEY);
+    if (download_url == NULL){
+        metadata = gdrive_get_metadata(file_id);
+        download_url = safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
+        fcache = NULL; // signal that we are using google's copy
+    }
+    if (download_url == NULL) return NULL;
+    do {
+        download_url = (char*)realloc(download_url,
+            strlen(download_url)
+            + strlen("&access_token=")
+            + strlen(KEY)
+            + 1
+        );
+        strcat(download_url, "&access_token=");
+        strcat(download_url, KEY);
 
-	printf("download url = %s\n",download_url);
-	FILE * ret = rest_get(NULL,download_url);
+        printf("download url = %s\n",download_url);
+        ret = rest_get(NULL,download_url);
+	    free(download_url);
 
-	free(download_url);
+        if (ret == NULL){
+            metadata = gdrive_get_metadata(file_id);
+            download_url = safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
+            fcache = NULL; // signal that we are using google's copy
+
+        }
+    } while (ret == NULL && fcache != NULL);
+    
 	return ret;
 }
 
@@ -108,6 +127,10 @@ json_object * gdrive_get_changes(const char* pageToken,const char*startChangeId,
 	if (startChangeId != NULL){
 		rest_build_param(&params[i++], "startChangeId",startChangeId);
 	}
+    if (startChangeId == NULL && pageToken == NULL){
+        rest_build_param(&params[i++], "includeDeleted", "false");
+    }
+    rest_build_param(&params[i++], "includeSubscribed", "false");
 	params[i] = NULL;
 	i = 0;
 	while ( params[i] != NULL){

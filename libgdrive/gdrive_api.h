@@ -29,7 +29,7 @@ json_object * gdrive_get_metadata (const char * fileID);
 /***
  *	Download a file from google drive. takes a fileID not a filename.
  */
-FILE * gdrive_get (char * fileID);
+FILE * gdrive_get (char * fileID, json_object * metadata);
 
 /***
  *  @inputs = ( PageToken, startChangeId, maxResults )

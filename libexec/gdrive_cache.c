@@ -13,8 +13,8 @@
 utilities utils;
 bool check_error(json_object *);
 
-void gdrive_cache_init(utilities u, bool(*ce)(json_object*)){
-  utils = u;
+void gdrive_cache_init(utilities u){
+    utils = u;
 }
 
 char * safe_strdup(const char * value){
@@ -84,10 +84,13 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
   // get the modified time
   const char * modified_s = json_get_string(gdrive_meta, "modifiedDate");
   if (modified_s != NULL){
-    struct tm mod = {0};
-  	time_t modified;
+    char * mtime = strdup(modified_s);
+  	time_t modified = time(0);
+    struct tm mod;
+    memset(&mod, 0, sizeof(struct tm));
     // time in format 2015-02-12T17:40:31.492Z
-  	strptime(modified_s,"%Y-%m-%dT%H:%M:%SZ",&mod);
+  	strptime(mtime,"%Y-%m-%dT%H:%M:%SZ",&mod);
+    free(mtime);
     modified = mktime(&mod);
     json_add_int(file, "modified", (long long)modified);
   }
@@ -95,6 +98,9 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
 	json_add_string(file,"title", json_get_string(gdrive_meta, "title"));
 	json_add_string(file,"id", id);
 	json_add_int(file, "version", 0);
+//  if (json_object_object_get_ex(gdrive_meta, "downloadUrl",NULL)){
+//    json_add_string(file,"downloadUrl", json_get_string(gdrive_meta,"downloadUrl"));
+//  }
 
 
 	json_object * parents;
@@ -111,20 +117,24 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
 }
 
 char * get_path(const char * id){
+    bool free_metadata = false;
 	if (id == NULL) return strdup("/");
 	if ( strcmp(id, "root") == 0 ) return strdup("/");
 
 	json_object * file = utils.getFileCache(PLUGIN_PREFIX, id);
 	if (file == NULL) {
 	    file = update_metadata(id, NULL);
+        utils.addCache(PLUGIN_PREFIX, id, file);
+        free_metadata = true;
     }
     // #DEBUG
-    printf("file: \n%s\n", json_object_to_json_string_ext(file, JSON_C_TO_STRING_PRETTY));
+    //printf("file: \n%s\n", json_object_to_json_string_ext(file, JSON_C_TO_STRING_PRETTY));
     if (json_get_bool(file, "deleted", false)) return NULL;
     if (!json_object_object_get_ex(file, "path", NULL)){ 
         if (json_get_bool(file, "is_root", false)) return strdup("/");
         char * parent_id = safe_strdup(json_get_string(file, "parentID"));
         char * title = safe_strdup(json_get_string(file, "title"));
+        if (title == NULL){ return NULL ;}
         bool is_dir = json_get_bool(file, "is_dir", false);
         char * path = get_path(parent_id);
 
@@ -136,11 +146,13 @@ char * get_path(const char * id){
         strcat(path, title);
         if (is_dir) strcat(path, "/");
         free(title);
+        
         // cache this data.
         get_metadata(id, path);
 
         return path;
     }
+    if (free_metadata) json_object_put(file);
     return strdup(json_get_string(file, "path"));
 }
 
