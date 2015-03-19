@@ -66,7 +66,10 @@ int update_cache(const char  * id,
     if (old_metadata != NULL){
         long long int old_mtime = json_get_int(old_metadata, "modified", 0);
 	    long long int new_mtime = json_get_int(new_metadata, "modified", 1);
-        if (old_mtime >= new_mtime ) return 0;
+        if (old_mtime >= new_mtime ){
+            json_object_put(new_metadata);
+            return 0;
+        }
     } else {
         if (id) utils.addCache(PLUGIN_PREFIX, id, json_object_get(new_metadata));
         if (path) utils.addCache(PLUGIN_PREFIX, path, json_object_get(new_metadata));
@@ -75,21 +78,20 @@ int update_cache(const char  * id,
     // else metadata has changed.
     char * path_from_id = NULL;
 
-    int version = json_get_int(old_metadata, "version", 0);
-    version++;
-    json_object_object_del(new_metadata, "version");
+    int version = json_get_int(old_metadata, "version", 0) + 1;
     json_add_int(new_metadata, "version", version);
 
     if (path == NULL) path = path_from_id = get_path(id);
     if (path == NULL) { // this was deleted
+        json_object_put(new_metadata);
         return 0;
     }
     json_add_string(new_metadata, "path", path);
 
     utils.addCache(PLUGIN_PREFIX, path, json_object_get(new_metadata));
-    utils.addCache(PLUGIN_PREFIX, id  , json_object_get(new_metadata));
+    utils.addCache(PLUGIN_PREFIX, id  , new_metadata);
     json_object_put(new_metadata);
-
+    free(path_from_id);
     return 1;
 }
 
@@ -149,6 +151,7 @@ void reauth(){
 	  	if (strcmp(gdrive_access_token(NULL), key) != 0){
 	  	  gdrive_access_token(key);
 	  	  free(key);
+          json_object_put(config);
 	  	  return;
 	  	}
 
@@ -169,6 +172,8 @@ void reauth(){
 		key = login();
 	}
 	gdrive_access_token(key);
+    free(key);
+    json_object_put(config);
 }
 
 bool check_error(json_object* obj){
@@ -216,6 +221,7 @@ void get_updates(int (*cb)(const char*,int)){
         utils = local_utils;
         gdrive_cache_init(utils);
     }
+    bool first_sync = false;
 	char * last_change;
 	char * next_page_token = NULL;
 	json_object* lc;
@@ -227,11 +233,15 @@ void get_updates(int (*cb)(const char*,int)){
 	} else {
 		last_change = strdup(json_object_get_string(lc));
 	}
-	if (last_change[0]=='0') last_change = NULL;
+	if (last_change[0]=='0'){
+        first_sync = true;
+        last_change = NULL;
+    }
 	do {
-        json_object * changes;
+        json_object * changes = NULL;
         do {
-            changes = gdrive_get_changes(next_page_token,last_change,600);
+            if (changes != NULL) json_object_put(changes);
+            changes = gdrive_get_changes(next_page_token,last_change,600,false,!first_sync);
         } while(check_error(changes));
         free(last_change);
         last_change = NULL;
@@ -256,18 +266,14 @@ void get_updates(int (*cb)(const char*,int)){
             for ( i = 0; i < json_object_array_length(items);i++){
                 json_object * change = json_object_array_get_idx(items,i);
                 const char * id    = json_get_string(change,"fileId");
+                if (json_get_bool(change, "deleted", false)) printf("%s was deleted\n",id);
                 if (
                     !json_get_bool(change,"deleted",false) &&
                     json_object_object_get_ex(change,"file",&change)
                     ){
-                        bool can_sync = json_object_object_get_ex(change,"downloadUrl", NULL);
-                        if (! can_sync){
-                            // this will end up as a link, but for now ignore.
-                            continue;
-                        }
                         if (strcmp(json_get_string(change, "mimeType"), "application/vnd.google-apps.folder") == 0){
                             printf("folder id '%s'\n", id);
-                            update_cache(id, NULL, update_metadata(id,json_object_get(change)));
+                            update_cache(id, NULL, update_metadata(id,change));
                         }
                 }
             }
@@ -275,22 +281,27 @@ void get_updates(int (*cb)(const char*,int)){
             for ( i = 0; i < json_object_array_length(items);i++){
                 json_object * change = json_object_array_get_idx(items,i);
                 const char * id    = json_get_string(change,"fileId");
-                printf("working on changeid %d, number %d\n",json_get_int(change, "id", 0), i);
+                printf("working on changeid %lld\n",json_get_int(change, "id", 0));
                 if (
                     !json_get_bool(change,"deleted",false) &&
                     json_object_object_get_ex(change,"file",&change)
                     ){
+                        printf("not deleted\n");
+                        bool is_trashed = json_get_bool(change, "explicitlyTrashed", false);
+                        printf("is_trashed = %s\n", is_trashed? "true":"false");
+
                         bool can_sync = json_object_object_get_ex(change,"downloadUrl", NULL);
-                        if (! can_sync){
+                        if (!is_trashed && !can_sync){
                             // this will end up as a link, but for now ignore.
                             continue;
                         }
-    //					json_object * file = update_metadata(id);
-                        if (update_cache(id, NULL, update_metadata(id,json_object_get(change))) == 0) continue;
 
-//                        const char * title = json_get_string(change,"title");
+                        if (update_cache(id, NULL, update_metadata(id,change)) == 0 && !is_trashed){
+                            continue;
+                        }
+
                         const char * modified = json_get_string(change,"modifiedDate");
-
+                        
                         bool is_create = strcmp(
                             json_get_string(change,"createdDate"),
                             modified
@@ -305,9 +316,17 @@ void get_updates(int (*cb)(const char*,int)){
                         char * path = get_path(id);
 
                         int mask = 0;
+
                         if (is_dir) 	mask |= S_DIR;
                         if (is_create) 	mask |= S_CREATE;
                         else 			mask |= S_CLOSE_WRITE;
+
+                        if (is_trashed){
+                            mask = S_DELETE;
+                            update_version(id,path);
+                            printf("file '%s' with id '%s' was trashed\n", path, id);
+                        }
+
                         char * fullPath = (char *) malloc(PLUGIN_PREFIX_LEN + strlen(path) + 2);
                         strcpy (fullPath, PLUGIN_PREFIX);
                         strcat (fullPath, path);
@@ -323,18 +342,23 @@ void get_updates(int (*cb)(const char*,int)){
                         );
                         free(path);
                     } else {
+                        printf("deleting file with id %s\n", id); 
                         json_object * file = get_metadata(id, NULL);
                         int mask = 0;
                         if (file != NULL) {
                             mask |= S_DELETE;
                             if (json_get_bool(file, "is_dir", false)) mask|=S_DIR;
                             const char * path = json_get_string(file, "path");
-                            char * fullPath = (char *) malloc(PLUGIN_PREFIX_LEN + strlen(path) + 2);
-                            strcpy (fullPath, PLUGIN_PREFIX);
-                            strcat (fullPath, path);
-                            //cb(fullPath,mask);
-                            json_add_int(aggregate_changes,fullPath,mask);
-                            free(fullPath);
+                            if (path != NULL){
+                                printf("file '%s' with id '%s' was found in cache\n", path, id);
+                                update_version(id,path);
+                                char * fullPath = (char *) malloc(PLUGIN_PREFIX_LEN + strlen(path) + 2);
+                                strcpy (fullPath, PLUGIN_PREFIX);
+                                strcat (fullPath, path);
+                                //cb(fullPath,mask);
+                                json_add_int(aggregate_changes,fullPath,mask);
+                                free(fullPath);
+                            }
                         }
                         printf("file id: '%s, deleted\n",id);
                     }
@@ -368,9 +392,14 @@ void get_updates(int (*cb)(const char*,int)){
 void sync_listen( int (*call_back)(const char*path,int type)){
 	// cludge because we are polling.
 	#define poll_time 30 // poll time in seconds
+    time_t poll_start;
+    time_t now;
 	while(1){
+        time(&poll_start);
 		get_updates(call_back);
-		sleep(poll_time);
+        if (time(&now) - poll_start < poll_time){
+    		sleep(poll_time - (now - poll_start));
+        }
 	}
 }
 
@@ -393,7 +422,7 @@ FILE * sync_open(char * path){
     json_object * fcache = get_metadata(NULL,path);
     const char * id = json_get_string(fcache, "id");
   	do {
-		file = gdrive_get(id, fcache);
+		file = gdrive_get(id);
 		if (file == NULL) reauth();
 	} while (file == NULL);
 

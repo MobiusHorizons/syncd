@@ -11,7 +11,7 @@ char * KEY;
 json_object * cache;
 
 /* convenience functions */
-const char * JSON_GET_STRING(json_object * obj, char * name){
+const char * JSON_GET_STRING(json_object * obj, const char * name){
 	json_object * temp;
 	if (json_object_object_get_ex(obj,name,&temp)){
 		const char * ret = json_object_get_string(temp);
@@ -20,14 +20,14 @@ const char * JSON_GET_STRING(json_object * obj, char * name){
 	return NULL;
 }
 
-long JSON_GET_INT64(json_object * obj, char * object){
+long JSON_GET_INT64(json_object * obj, const char * object){
 	if (json_object_object_get_ex(obj,object,&obj)){
 		return json_object_get_int64(obj);
 	}
 	return 0;
 }
 
-bool JSON_GET_BOOL(json_object * obj, char * object, bool def){
+bool JSON_GET_BOOL(json_object * obj, const char * object, bool def){
 	if (json_object_object_get_ex(obj,object,&obj)){
 		return json_object_get_boolean(obj);
 	}
@@ -42,7 +42,7 @@ char * safe_strdup(const char * in){
 json_object * gdrive_get_metadata(const char * file_id){
     printf("GDRIVE_GET_META: had to get medatada for id '%s'\n", file_id);
     char * params[2];
-	char * url = malloc(strlen("https://www.googleapis.com/drive/v2/files/") + strlen(file_id) + 1);
+	char * url = (char*) malloc(strlen("https://www.googleapis.com/drive/v2/files/") + strlen(file_id) + 1);
 	sprintf(url, "https://www.googleapis.com/drive/v2/files/%s",file_id);
 //	printf("url = %s\n",url);
 	rest_build_param(&params[0],"access_token",KEY);
@@ -54,8 +54,7 @@ json_object * gdrive_get_metadata(const char * file_id){
 	free(params[0]);
 	free(url);
 	json_object * g_metadata = json_tokener_parse(resp.data);
-    printf("GDRIVE: \n%s\n", resp.data);
-//    free(resp.data);
+    free(resp.data);
     return g_metadata;
 }
 
@@ -76,44 +75,28 @@ json_object * gdrive_get_metadata(const char * file_id){
 }
 */
 
-FILE * gdrive_get (char * file_id, json_object * fcache){
-    FILE * ret = NULL;
-    json_object * metadata = fcache;
-    printf("Metadata: %s\n",json_object_to_json_string(metadata));
+FILE * gdrive_get (const char * file_id){
+    json_object * metadata = gdrive_get_metadata(file_id);
 	char * download_url = safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
-    if (download_url == NULL){
-        metadata = gdrive_get_metadata(file_id);
-        download_url = safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
-        fcache = NULL; // signal that we are using google's copy
-    }
     if (download_url == NULL) return NULL;
-    do {
-        download_url = (char*)realloc(download_url,
-            strlen(download_url)
-            + strlen("&access_token=")
-            + strlen(KEY)
-            + 1
-        );
-        strcat(download_url, "&access_token=");
-        strcat(download_url, KEY);
+    download_url = (char*)realloc(download_url,
+        strlen(download_url)
+        + strlen("&access_token=")
+        + strlen(KEY)
+        + 1
+    );
+    strcat(download_url, "&access_token=");
+    strcat(download_url, KEY);
 
-        printf("download url = %s\n",download_url);
-        ret = rest_get(NULL,download_url);
-	    free(download_url);
-
-        if (ret == NULL){
-            metadata = gdrive_get_metadata(file_id);
-            download_url = safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
-            fcache = NULL; // signal that we are using google's copy
-
-        }
-    } while (ret == NULL && fcache != NULL);
-    
+    printf("download url = %s\n",download_url);
+    FILE * ret = rest_get(NULL,download_url);
+    free(download_url);
+    json_object_put(metadata);
 	return ret;
 }
 
-json_object * gdrive_get_changes(const char* pageToken,const char*startChangeId, int max){
-	char * params[5];
+json_object * gdrive_get_changes(const char* pageToken,const char*startChangeId, int max, bool includeSubscribed, bool includeDeleted){
+	char * params[7];
 	int i = 0;
 	rest_build_param(&params[i++], "access_token",KEY);
 	if (max > 0){
@@ -127,10 +110,8 @@ json_object * gdrive_get_changes(const char* pageToken,const char*startChangeId,
 	if (startChangeId != NULL){
 		rest_build_param(&params[i++], "startChangeId",startChangeId);
 	}
-    if (startChangeId == NULL && pageToken == NULL){
-        rest_build_param(&params[i++], "includeDeleted", "false");
-    }
-    rest_build_param(&params[i++], "includeSubscribed", "false");
+    rest_build_param(&params[i++], "includeDeleted", includeDeleted?"true":"false");
+    rest_build_param(&params[i++], "includeSubscribed", includeSubscribed?"true":"false");
 	params[i] = NULL;
 	i = 0;
 	while ( params[i] != NULL){

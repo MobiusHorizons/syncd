@@ -38,7 +38,10 @@ json_object * get_metadata(const char* id, const char* path){
 	}
 
 	json_object * file = utils.getFileCache(PLUGIN_PREFIX, id);
-	if (file != NULL) return file;
+	if (file != NULL){
+        free(id_from_path);
+        return file;
+    }
 
 	/* Not in any cache, now we have to get it from google */
 	file = update_metadata(id, NULL);
@@ -46,12 +49,15 @@ json_object * get_metadata(const char* id, const char* path){
 	/* use the supplied path if available else calculate path */
 	if (path == NULL) path = path_from_id = get_path(id);
 
-    if (path == NULL) return NULL;// this means it was deleted
+    if (path == NULL){
+        free(id_from_path);
+        return NULL;// this means it was deleted
+    }
 
 	json_add_string(file, "path", path);
 
 	utils.addCache(PLUGIN_PREFIX, path, json_object_get(file));
-	utils.addCache(PLUGIN_PREFIX, id  , json_object_get(file));
+	utils.addCache(PLUGIN_PREFIX, id  , file);
 
 	json_object_put(file);
 
@@ -61,18 +67,20 @@ json_object * get_metadata(const char* id, const char* path){
 
 
 json_object * update_metadata( const char * id, json_object * gdrive_meta){
-
+    bool free_metadata = false;
 	while(check_error(gdrive_meta)) {
-			gdrive_meta = gdrive_get_metadata(id);
-            json_object * error;
-            if(json_object_object_get_ex(gdrive_meta, "error", &error)){
-                if (json_get_int(error, "code", 0) == 404){
-                    // this is deleted, give a deleted object instead;
-                    json_object * file = json_object_new_object();
-                    json_add_bool(file, "deleted", true);
-                    return file;
-                }
+        gdrive_meta = gdrive_get_metadata(id);
+        free_metadata = true;
+        json_object * error;
+        if(json_object_object_get_ex(gdrive_meta, "error", &error)){
+            if (json_get_int(error, "code", 0) == 404){
+                // this is deleted, give a deleted object instead;
+                json_object * file = json_object_new_object();
+                json_add_bool(file, "deleted", true);
+                if (gdrive_meta != NULL) json_object_put(gdrive_meta);
+                return file;
             }
+        }
 	} 
 
 	json_object * file = json_object_new_object();
@@ -113,6 +121,7 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
 	}
 	//printf("google drive: %s\n", json_object_to_json_string_ext(gdrive_meta, JSON_C_TO_STRING_PRETTY));
 	//printf("local       : %s\n", json_object_to_json_string_ext(file, JSON_C_TO_STRING_PRETTY));
+  if (free_metadata) json_object_put(gdrive_meta);
   return file;
 }
 
@@ -149,7 +158,7 @@ char * get_path(const char * id){
         
         // cache this data.
         get_metadata(id, path);
-
+        if (free_metadata) json_object_put(file);
         return path;
     }
     if (free_metadata) json_object_put(file);
@@ -195,3 +204,13 @@ char * get_id(const char * path){
 	return id;
 }
 
+void update_version(const char * id, const char * path){
+    json_object * md = get_metadata(id, path);
+    if (id == NULL) id = json_get_string(md, "id");
+    if (path == NULL) id = json_get_string(md, "path");
+    if (md == NULL) return;
+    json_add_int(md, "version", json_get_int(md, "version", 0) + 1);
+    utils.addCache(PLUGIN_PREFIX, id, json_object_get(md));
+    utils.addCache(PLUGIN_PREFIX, path, json_object_get(md));
+    json_object_put(md);
+}

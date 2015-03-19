@@ -4,9 +4,9 @@
 #include "../librest/rest.h"
 
 /*	convenience functions */
-const char * JSON_GET_STRING (json_object*, char* );
-long JSON_GET_INT64 (json_object*, char* );
-bool JSON_GET_BOOL (json_object*, char*, bool );
+const char * JSON_GET_STRING (json_object*, const char* );
+long JSON_GET_INT64 (json_object*, const char* );
+bool JSON_GET_BOOL (json_object*, const char*, bool );
 
 
 /***
@@ -29,7 +29,7 @@ json_object * gdrive_get_metadata (const char * fileID);
 /***
  *	Download a file from google drive. takes a fileID not a filename.
  */
-FILE * gdrive_get (char * fileID, json_object * metadata);
+FILE * gdrive_get (const char * fileID);
 
 /***
  *  @inputs = ( PageToken, startChangeId, maxResults )
@@ -38,7 +38,7 @@ FILE * gdrive_get (char * fileID, json_object * metadata);
  *	just retrieve (max) entries from the start of the change
  *	history.
  */
-json_object * gdrive_get_changes (const char* PageToken,const char* startChangeID, int maxResults);
+json_object * gdrive_get_changes (const char* PageToken,const char* startChangeID, int maxResults, bool includeSubscribed, bool includeDeleted);
 
 /*
  *	Upload a file to a given google upload url. Mostly used internally

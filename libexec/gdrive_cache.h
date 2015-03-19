@@ -11,4 +11,6 @@ char * get_id(const char * path);
 char * get_path(const char * id);
 json_object * update_metadata(const char * id, json_object * gdrive_metadata);
 
+void update_version(const char * id, const char * path);
+
 #endif
