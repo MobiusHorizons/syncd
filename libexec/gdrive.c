@@ -88,17 +88,45 @@ int update_cache(const char  * id,
     }
     json_add_string(new_metadata, "path", path);
 
-    utils.addCache(PLUGIN_PREFIX, path, json_object_get(new_metadata));
+       utils.addCache(PLUGIN_PREFIX, path, json_object_get(new_metadata));
     utils.addCache(PLUGIN_PREFIX, id  , new_metadata);
     json_object_put(new_metadata);
     free(path_from_id);
     return 1;
 }
 
-json_object * gdrive_files_put(const char * path, FILE * file){
-    if (path == NULL) return NULL;
-    char * local_file = strdup(path);
+unsigned long upload(const char * path, FILE * file){
+    if (path == NULL) return -1;
+    unsigned long size;
+    char * local_path = strdup(path);
     json_object * metadata = json_object_new_object();
+    char * fname = strdup(basename(local_path));
+    const char * parent = dirname(local_path);
+    char * parentID = get_id(parent);
+    if (parentID == NULL){
+    //    parentID = gdrive_mkdir(parent);
+    }
+    
+    json_add_string(metadata, "title", fname);
+    json_object * parent_obj = json_object_new_object();
+    json_add_string(parent_obj, "id", parentID);
+    json_object * parents = json_object_new_array();
+    json_object_array_add(parents, parent_obj);
+    json_object_object_add(metadata, "parents", parents);
+
+    json_object * response = NULL;
+    {
+        do{
+            response = gdrive_put_file(metadata, file);
+        } while (check_error(response));
+    }
+    size = json_get_int(response, "fileSize", 0);
+	json_object_put(metadata);
+    json_object_put(response);
+    free(parentID);
+    free(local_path);
+    free(fname);
+    return size;
 }
     
 
@@ -438,12 +466,8 @@ FILE * sync_open(char * path){
 */
 int sync_write(char * path, FILE * fp){
 	path += PLUGIN_PREFIX_LEN;
-	json_object * response;
-	do{
-		response = gdrive_files_put(path,fp);
-	}while (check_error(response));
-	puts(json_object_to_json_string_ext(response,JSON_C_TO_STRING_PRETTY));
-	json_object_put(response);
+    int resp = upload(path,fp);
+    return resp;
 }
 
 /** int sync_mkdir( char * path )

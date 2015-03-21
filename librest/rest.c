@@ -117,7 +117,9 @@ static size_t WriteBufferCB(void *contents, size_t size, size_t nmemb, void *use
 	if (userp!= NULL){
 		size_t realsize = size * nmemb;
 		buffer * data = (buffer*) userp;
-		*data = buffer_append(*data,contents, realsize);
+        if (realsize > 0){
+		    *data = buffer_append(*data,contents, realsize);
+        }
 		return realsize;
 	}
     return 0;
@@ -282,7 +284,7 @@ int rest_post_all(rest_args args){
 		curl_easy_setopt(curl,CURLOPT_WRITEDATA, args.return_data);
 		curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,WriteBufferCB);
 	}
-//	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 	CURLcode res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	free(post);

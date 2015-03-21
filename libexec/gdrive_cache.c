@@ -186,20 +186,20 @@ char * get_id(const char * path){
 		return strdup("root");
 	}
 
-	json_object * paths = utils.getCache(PLUGIN_PREFIX);
-	json_object * file;
-	if (json_object_object_get_ex(paths,path,&file)){
-		return strdup(json_get_string(file,"id"));
-	}
+	json_object * file = utils.getFileCache(PLUGIN_PREFIX, path);
+    if (file != NULL){
+        return strdup(json_get_string(file, "id"));
+    }
 	// it wasn't in the cache, so get it and add it.
 
 	char * local_path = strdup(path);
-	char * fname = basename(local_path);
+	char * fname = strdup(basename(local_path));
 	char * parent = dirname(local_path);
 	char * parentId = get_id(parent);
 	char * id = get_child_id(parentId, fname);
 	get_metadata(id, path); // this caches the metadata.
 	free(parentId);
+    free(fname);
 	free(local_path);
 	return id;
 }

@@ -43,7 +43,7 @@ json_object * gdrive_get_changes (const char* PageToken,const char* startChangeI
 /*
  *	Upload a file to a given google upload url. Mostly used internally
  */
-void gdrive_upload (char* uploadURL, FILE* file);
+json_object * gdrive_upload (char* uploadURL, FILE* file);
 
 /****
  *	List files that match a query. optionally pass a nonzero pageToken
@@ -63,6 +63,13 @@ json_object * gdrive_files_list_children(char* fileID, int pageToken);
 * optionally pass a query to filter by.
 */
 json_object * gdrive_folder_list(char* fileID,const char * pageToken, char* query);
+
+/*** 
+ * Upload a file with a given metadata to google drive
+ *
+ */
+json_object * gdrive_put_file(json_object * metadata, FILE * file);
+
 /***
  *	Upload a given FILE * to the specified location.
  *	(ex. gdrive_files_put("/Family Trip/Photo.jpg", Picture); )
