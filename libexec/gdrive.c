@@ -16,6 +16,7 @@
 
 
 bool check_error(json_object* obj);
+char * mkdirP(const char * path);
 
 
 /* globals */
@@ -96,7 +97,9 @@ int update_cache(const char  * id,
 }
 
 unsigned long upload(const char * path, FILE * file){
+    char * id = NULL;
     if (path == NULL) return -1;
+    id = get_id(path);
     unsigned long size;
     char * local_path = strdup(path);
     json_object * metadata = json_object_new_object();
@@ -104,10 +107,13 @@ unsigned long upload(const char * path, FILE * file){
     const char * parent = dirname(local_path);
     char * parentID = get_id(parent);
     if (parentID == NULL){
-    //    parentID = gdrive_mkdir(parent);
+        parentID = mkdirP(parent);
     }
     
     json_add_string(metadata, "title", fname);
+    if (id != NULL){
+        json_add_string(metadata, "id", id);
+    }
     json_object * parent_obj = json_object_new_object();
     json_add_string(parent_obj, "id", parentID);
     json_object * parents = json_object_new_array();
@@ -122,11 +128,59 @@ unsigned long upload(const char * path, FILE * file){
     }
     size = json_get_int(response, "fileSize", 0);
 	json_object_put(metadata);
+    id = strdup(json_get_string(response, "id"));
+    json_object * cache_entry = update_metadata(id, response);
+    json_add_string(cache_entry, "path", path);
+    utils.updateFileCache(PLUGIN_PREFIX, id, json_object_get(cache_entry));
+    utils.updateFileCache(PLUGIN_PREFIX, path, cache_entry);
     json_object_put(response);
+    free(id);
     free(parentID);
     free(local_path);
     free(fname);
     return size;
+}
+    
+char * mkdirP(const char * path){
+    if (path == NULL) return NULL;
+    
+    char * id = get_id(path);
+    if (id != NULL) return id;
+
+    char * local_path = strdup(path);
+    json_object * metadata = json_object_new_object();
+    char * fname = strdup(basename(local_path));
+    const char * parent = dirname(local_path);
+    char * parentID = get_id(parent);
+    if (parentID == NULL){
+        parentID = mkdirP(parent);
+    }
+    
+    json_add_string(metadata, "title", fname);
+    json_add_string(metadata, "mimeType", "application/vnd.google-apps.folder" );
+    json_object * parent_obj = json_object_new_object();
+    json_add_string(parent_obj, "id", parentID);
+    json_object * parents = json_object_new_array();
+    json_object_array_add(parents, parent_obj);
+    json_object_object_add(metadata, "parents", parents);
+
+    json_object * response = NULL;
+    {
+        do{
+            response = gdrive_new_folder(metadata);
+        } while (check_error(response));
+    }
+    id = strdup(json_get_string(response, "id"));
+	json_object_put(metadata);
+    json_object * cache_entry = update_metadata(id, response);
+    json_add_string(cache_entry, "path", path);
+    utils.updateFileCache(PLUGIN_PREFIX, id, json_object_get(cache_entry));
+    utils.updateFileCache(PLUGIN_PREFIX, path, cache_entry);
+    json_object_put(response);
+    free(parentID);
+    free(local_path);
+    free(fname);
+    return id;
 }
     
 

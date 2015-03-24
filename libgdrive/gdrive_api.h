@@ -64,6 +64,12 @@ json_object * gdrive_files_list_children(char* fileID, int pageToken);
 */
 json_object * gdrive_folder_list(char* fileID,const char * pageToken, char* query);
 
+/**
+ * Create a new folder
+ *
+ */
+json_object * gdrive_new_folder(json_object * metadata);
+
 /*** 
  * Upload a file with a given metadata to google drive
  *

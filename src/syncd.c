@@ -113,7 +113,7 @@ int cb(const char * path, int mask){
 			} else {
 				//updateFileCache(plugins[pd].prefix, sync_path[i] + strlen(plugins[pd].prefix),orig_detail);
 				json_object_object_add(dest_cache, "next_version", json_object_new_int64(orig_ver));
-				addCache(dest_prefix, sync_path[i] + strlen(dest_prefix),dest_cache);
+				addCache(dest_prefix, sync_path[i] + strlen(dest_prefix),json_object_get(dest_cache));
 			}
 			if ((mask & S_CREATE ) && (mask & S_DIR)){
 				printf("new dir\n");

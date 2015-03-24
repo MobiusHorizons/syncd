@@ -270,6 +270,40 @@ json_object * gdrive_files_put(const char * path, FILE * file){
 	return NULL;
 }
 
+json_object * gdrive_new_folder(json_object * metadata){
+	char * headers[2];
+	char * bearer = ( char* ) malloc(strlen(KEY) + strlen("Bearer ")+1);
+    json_object * response = NULL;
+	strcpy(bearer,"Bearer "); strcat(bearer,KEY);
+	rest_build_header(&headers[0],"Authorization", bearer);
+	free(bearer);
+	headers[1] = NULL;
+
+	/* set up arguments */
+	rest_args args;
+	args.url = strdup("https://www.googleapis.com/drive/v2/files");
+	args.headers = headers;
+	args.params = NULL;
+	args.content_type = strdup("application/json; charset=UTF-8");
+
+	buffer data;
+    buffer resp = buffer_init(0);
+	data.data = strdup(json_object_to_json_string_ext(metadata, JSON_C_TO_STRING_PRETTY));
+	data.size = strlen(data.data);
+
+	args.content = &data;
+    args.return_data = &resp;
+	args.return_headers = NULL;
+
+	rest_post_all(args);
+    if (resp.data != NULL){
+        response = json_tokener_parse(resp.data);
+    }
+    buffer_free(data);
+    buffer_free(resp);
+    return response;
+}
+
 json_object * gdrive_put_file(json_object * metadata, FILE * file){
 	char * headers[2];
 	char * bearer = ( char* ) malloc(strlen(KEY) + strlen("Bearer ")+1);
@@ -289,7 +323,16 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
 
 	/* set up arguments */
 	rest_args args;
-	args.url = strdup("https://www.googleapis.com/upload/drive/v2/files?uploadType=resumable");
+    const char * id = json_get_string(metadata, "id");
+    if (id == NULL){
+    	args.url = strdup("https://www.googleapis.com/upload/drive/v2/files?uploadType=resumable");
+    } else {
+        const char * base_url = "https://www.googleapis.com/upload/drive/v2/files/";
+        args.url = (char *) malloc(strlen(base_url) + strlen(id) + strlen("?uploadType=resumable") + 1);
+        strcpy(args.url, base_url);
+        strcat(args.url, id);
+        strcat(args.url, "?uploadType=resumable");
+    }
 	args.headers = headers;
 	args.params = NULL;
 	args.content_type = strdup("application/json; charset=UTF-8");
@@ -321,6 +364,7 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
         printf("url = '%s'\n",upload_url);
         response = gdrive_upload(upload_url,file);
     } else {
+       printf("url: '%s'", args.url);
        printf("encountered an error\n%s\n",error.data);
        response = json_tokener_parse(error.data);
     }

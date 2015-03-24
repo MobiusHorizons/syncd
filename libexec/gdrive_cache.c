@@ -173,7 +173,7 @@ char * get_child_id(char * parentId, char * fname){
 	json_object * files;
 	if (json_object_object_get_ex(dir_info, "items", &files)){
 		json_object * file = json_object_array_get_idx(files,0);
-		id = strdup(json_get_string(file, "id"));
+		id = safe_strdup(json_get_string(file, "id"));
 	}
 	json_object_put(dir_info);
 	return id;
@@ -188,7 +188,9 @@ char * get_id(const char * path){
 
 	json_object * file = utils.getFileCache(PLUGIN_PREFIX, path);
     if (file != NULL){
-        return strdup(json_get_string(file, "id"));
+        const char * fileID = json_get_string(file, "id");
+        if (fileID == NULL) return NULL;
+        return strdup(fileID);
     }
 	// it wasn't in the cache, so get it and add it.
 
@@ -197,7 +199,7 @@ char * get_id(const char * path){
 	char * parent = dirname(local_path);
 	char * parentId = get_id(parent);
 	char * id = get_child_id(parentId, fname);
-	get_metadata(id, path); // this caches the metadata.
+	if (id != NULL) get_metadata(id, path); // this caches the metadata.
 	free(parentId);
     free(fname);
 	free(local_path);
