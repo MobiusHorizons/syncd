@@ -323,7 +323,7 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
 
 	/* set up arguments */
 	rest_args args;
-    const char * id = json_get_string(metadata, "id");
+    const char * id = JSON_GET_STRING(metadata, "id");
     if (id == NULL){
     	args.url = strdup("https://www.googleapis.com/upload/drive/v2/files?uploadType=resumable");
     } else {
@@ -338,38 +338,42 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
 	args.content_type = strdup("application/json; charset=UTF-8");
 
 	buffer data;
-    buffer error = buffer_init(0);
-    error.size = 0;
+    buffer resp = buffer_init(0);
 	data.data = strdup(json_object_to_json_string_ext(metadata, JSON_C_TO_STRING_PRETTY));
 	data.size = strlen(data.data);
 
 	args.content = &data;
-    args.return_data = &error;
+    args.return_data = &resp;
 	args.return_headers = return_headers;
+    int curlResponse = 0;
+    if (id == NULL){
+        curlResponse = rest_post_all(args);
+    } else {
+        curlResponse = rest_put_all(args, NULL);
+    }
+    printf("curlResponse = %d\n", curlResponse);
 
-	int resp = rest_post_all(args);
-    printf("response = %d\n", resp);
-
-    if (error.data == NULL){
+    if (curlResponse == CURLE_OK){
         i=0;
+        char * upload_url;
         while (i < 10 && return_headers[i] != NULL){
+            if (strlen(return_headers[i]) > 10 && strncmp(return_headers[i],"Location: ", 10) == 0){
+                upload_url = return_headers[i] + 10;
+                char * end = upload_url + strlen(upload_url) -1;
+                while(end > upload_url && isspace(*end)) end--;
+                *(end+1) = 0;
+                printf("url = '%s'\n",upload_url);
+            }
             puts(return_headers[i++]);
         }
-        char * upload_url = return_headers[1] + strlen("Location: ");
-        {
-            char * end = upload_url + strlen(upload_url) -1;
-            while(end > upload_url && isspace(*end)) end--;
-            *(end+1) = 0;
-        }
-        printf("url = '%s'\n",upload_url);
         response = gdrive_upload(upload_url,file);
     } else {
        printf("url: '%s'", args.url);
-       printf("encountered an error\n%s\n",error.data);
-       response = json_tokener_parse(error.data);
+       printf("encountered an error\n%s\n",resp.data);
+       response = json_tokener_parse(resp.data);
     }
 	buffer_free(data);
-    buffer_free(error);
+    buffer_free(resp);
 	i = 0;
 	while (return_headers[i]!= NULL && return_headers[i][0] != '\0'){
 		free(return_headers[i]);

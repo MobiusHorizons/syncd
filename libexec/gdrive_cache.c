@@ -47,13 +47,19 @@ json_object * get_metadata(const char* id, const char* path){
 	file = update_metadata(id, NULL);
 
 	/* use the supplied path if available else calculate path */
-	if (path == NULL) path = path_from_id = get_path(id);
+	if (path == NULL){
+        path = path_from_id = get_path(id);
+    } else {
+        bool is_dir = json_get_bool(file, "is_dir",false);
+        path = path_from_id = normalize_path(path, is_dir);
+    }
 
     if (path == NULL){
         free(id_from_path);
         return NULL;// this means it was deleted
     }
 
+    
 	json_add_string(file, "path", path);
 
 	utils.addCache(PLUGIN_PREFIX, path, json_object_get(file));
@@ -62,6 +68,7 @@ json_object * get_metadata(const char* id, const char* path){
 	json_object_put(file);
 
 	free(id_from_path);
+    free(path_from_id);
 	return file;
 }
 
@@ -125,6 +132,21 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
   return file;
 }
 
+char * normalize_path(const char * path, bool is_dir){
+    if (path == NULL) return NULL;
+    char * local_path = strdup(path);
+    char * fname = strdup(basename(local_path));
+    char * parent_path = dirname(local_path);
+    parent_path = normalize_path(parent_path, true);
+    char * clean_path = ( char * ) malloc(strlen(parent_path) + strlen(fname) + is_dir + 1);
+    strcpy(clean_path, parent_path);
+    strcat(clean_path, fname);
+    if (is_dir) strcat(clean_path, "/");
+
+    free(local_path);
+    free(fname);
+    return clean_path;
+}
 char * get_path(const char * id){
     bool free_metadata = false;
 	if (id == NULL) return strdup("/");

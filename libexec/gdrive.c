@@ -64,6 +64,7 @@ int update_cache(const char  * id,
                  const char  * path,
                  json_object * new_metadata){
 	json_object * old_metadata = utils.getFileCache(PLUGIN_PREFIX, id);
+    bool is_dir = json_get_bool(new_metadata, "is_dir", false);
     if (old_metadata != NULL){
         long long int old_mtime = json_get_int(old_metadata, "modified", 0);
 	    long long int new_mtime = json_get_int(new_metadata, "modified", 1);
@@ -73,7 +74,11 @@ int update_cache(const char  * id,
         }
     } else {
         if (id) utils.addCache(PLUGIN_PREFIX, id, json_object_get(new_metadata));
-        if (path) utils.addCache(PLUGIN_PREFIX, path, json_object_get(new_metadata));
+        if (path){
+            char * clean_path = normalize_path(path, is_dir);
+            utils.addCache(PLUGIN_PREFIX, clean_path, json_object_get(new_metadata));
+            free(clean_path);
+        }
     }
 
     // else metadata has changed.
@@ -82,7 +87,12 @@ int update_cache(const char  * id,
     int version = json_get_int(old_metadata, "version", 0) + 1;
     json_add_int(new_metadata, "version", version);
 
-    if (path == NULL) path = path_from_id = get_path(id);
+    if (path == NULL) {
+        path = path_from_id = get_path(id);
+    } else {
+        path = path_from_id = normalize_path(path, is_dir);
+    }
+
     if (path == NULL) { // this was deleted
         json_object_put(new_metadata);
         return 0;
