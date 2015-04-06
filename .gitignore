@@ -1,7 +1,7 @@
 *.orig 
 *.swp
 *.bak
-sync
+syncd
 *.bak
 *.lo
 *.wo
@@ -15,7 +15,7 @@ token_store.txt
 Makefile.in
 Makefile
 # http://www.gnu.org/software/autoconf
-/autom4te.cache
+/autom4te.cache/
 /aclocal.m4
 /compile
 /configure
@@ -24,7 +24,14 @@ Makefile
 /missing
 /stamp-h1
 /config.h
+/config.sub
+/config.guess
 /config.h.in
+/config.log
+/config.status
+/m4
+/ltmain.sh
+/depcomp
 #libtool
 *.la
 .deps
