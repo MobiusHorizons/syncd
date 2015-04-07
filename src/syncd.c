@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <ltdl.h>
 #include "../libltdl/ltdl.h"
+#include <string.h>
 #include <plugin.h>
 
 typedef struct {
@@ -134,7 +135,7 @@ int cb(const char * path, int mask){
 			} else {
 				//updateFileCache(plugins[pd].prefix, sync_path[i] + strlen(plugins[pd].prefix),orig_detail);
 				json_object_object_add(dest_cache, "next_version", json_object_new_int64(orig_ver));
-				addCache(dest_prefix, sync_path[i] + strlen(dest_prefix),dest_cache);
+				addCache(dest_prefix, sync_path[i] + strlen(dest_prefix),json_object_get(dest_cache));
 			}
 			if ((mask & S_CREATE ) && (mask & S_DIR)){
 				printf("new dir\n");
@@ -179,7 +180,7 @@ int loadPlugins(Plugin **return_plugins){
 	int num_plugins = 0, i=0;
 	DIR * dp;
 	struct dirent *ep;
-    printf("looking for plugins in %s\n", LIBDIR );
+  printf("looking for plugins in %s\n", LIBDIR );
 	dp = opendir(LIBDIR ); //TODO this should pull from config.h
 	char configPath[PATH_MAX];
 	strcpy(configPath, getenv("HOME"));
@@ -190,11 +191,14 @@ int loadPlugins(Plugin **return_plugins){
 #if defined(UNIX)
 			if(ep->d_type == DT_REG){
 #endif
-				char * filename = malloc(strlen(ep->d_name) + strlen("plugins/")+1);
-				sprintf(filename,"plugins/%s",ep->d_name);
+				char * filename = (char*) malloc(strlen(ep->d_name) + strlen(LIBDIR)+2);
+				sprintf(filename,"%s/%s",LIBDIR,ep->d_name);
+				char * ext = rindex(ep->d_name, '.');
+				if(strcmp(ext, ".la") != 0) continue; // skip files that aren't named *.la (libldtl shared library)
+				printf("ext = '%s'\n",ext);
 				p.ptr = lt_dlopen(filename);
 				if (p.ptr != NULL){
-					plugins = realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
+					plugins = (Plugin *) realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
 					S_INIT init = (S_INIT) lt_dlsym(p.ptr,"init");
 					p.prefix = init(args);
 					printf ("prefix for plugin %d is '%s'\n",num_plugins,p.prefix);

@@ -138,7 +138,9 @@ static size_t WriteBufferCB(void *contents, size_t size, size_t nmemb, void *use
 	if (userp!= NULL){
 		size_t realsize = size * nmemb;
 		buffer * data = (buffer*) userp;
-		*data = buffer_append(*data,contents, realsize);
+        if (realsize > 0){
+		    *data = buffer_append(*data,contents, realsize);
+        }
 		return realsize;
 	}
     return 0;
@@ -289,7 +291,7 @@ int rest_post_all(rest_args args){
 			slist = curl_slist_append(slist,args.headers[i++]);
 		}
 		curl_easy_setopt(curl,CURLOPT_HTTPHEADER,slist);
-	}
+    }
 	if (args.return_headers != NULL){
 		curl_easy_setopt(curl,CURLOPT_WRITEHEADER,args.return_headers);
 		curl_easy_setopt(curl,CURLOPT_HEADERFUNCTION,WriteLinesCB);
@@ -303,7 +305,7 @@ int rest_post_all(rest_args args){
 		curl_easy_setopt(curl,CURLOPT_WRITEDATA, args.return_data);
 		curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,WriteBufferCB);
 	}
-//	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 	CURLcode res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	free(post);
@@ -312,6 +314,64 @@ int rest_post_all(rest_args args){
 	curl_slist_free_all(slist);
 	return res;
 }
+
+int rest_put_all(rest_args args, FILE * file){
+	CURL * curl = curl_easy_init();
+	char * full_url = NULL;
+	char content_length[100];
+	char * content_type = NULL;
+	struct curl_slist *slist = NULL;
+	int i;
+	SSL_CERT
+    if (args.params != NULL){
+        full_url = rest_build_url(args.params,args.url);
+	} else if (args.url != NULL){
+        full_url = strdup(args.url);
+    }
+	if (args.content != NULL){
+        curl_easy_setopt(curl,CURLOPT_UPLOAD, 1L);
+		curl_easy_setopt(curl,CURLOPT_READDATA,args.content);
+        curl_easy_setopt(curl,CURLOPT_READFUNCTION, ReadBufferCB);
+		rest_build_header(&content_type,"Content-Type",args.content_type);
+		sprintf(content_length,"Content-Length: %d",(int)args.content->size);
+		slist = curl_slist_append(slist,content_type);
+		slist = curl_slist_append(slist,content_length);
+	}
+	if (args.headers !=NULL){
+		i = 0;
+		while (args.headers[i] != NULL){
+			slist = curl_slist_append(slist,args.headers[i++]);
+		}
+		curl_easy_setopt(curl,CURLOPT_HTTPHEADER,slist);
+	}
+	if (args.return_headers != NULL){
+		curl_easy_setopt(curl,CURLOPT_WRITEHEADER,args.return_headers);
+		curl_easy_setopt(curl,CURLOPT_HEADERFUNCTION,WriteLinesCB);
+	}
+	if (args.url != NULL){
+		curl_easy_setopt(curl,CURLOPT_URL,full_url);
+	}
+	if (file != NULL){
+        curl_easy_setopt(curl,CURLOPT_UPLOAD, 1L);
+    	curl_easy_setopt(curl,CURLOPT_READDATA,file);
+        curl_easy_setopt(curl,CURLOPT_READFUNCTION,ReadFileCB); // for windows
+
+    }
+
+	if (args.return_data != NULL){
+		curl_easy_setopt(curl,CURLOPT_WRITEDATA, args.return_data);
+		curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,WriteBufferCB);
+	}
+
+	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+	CURLcode res = curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+	free(content_type);
+	free(full_url);
+	curl_slist_free_all(slist);
+	return res;
+}
+
 buffer rest_put_file (char** params, char* url, FILE * in){
 	CURL * curl = curl_easy_init();
 	SSL_CERT

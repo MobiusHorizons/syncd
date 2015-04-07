@@ -57,6 +57,7 @@ buffer 		EXPORT_SHARED rest_get_buffer (char ** params, char * url);
 buffer 		EXPORT_SHARED rest_post (char ** params, char * url);
 buffer 		EXPORT_SHARED rest_post_headers (char ** headers,char ** params, char * url);
 int 		EXPORT_SHARED rest_post_all(rest_args args);
+int 		EXPORT_SHARED rest_put_all(rest_args args, FILE * file);
 buffer 		EXPORT_SHARED rest_put_file (char** params, char* url, FILE * in);
 buffer 		EXPORT_SHARED rest_put_headers (char** params, char** headers,char* url, FILE * in);
 #endif

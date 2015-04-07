@@ -1,5 +1,4 @@
-/* Copyright (c) 2014 Paul Martin & Brian Cole
- *
+/*
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -19,6 +18,7 @@
  * THE SOFTWARE.
  */
 
+#define _XOPEN_SOURCE 500
 #include "cache.h"
 #include <string.h>
 #include <stdio.h>
@@ -29,6 +29,11 @@
 #include <err.h>
 #include <unistd.h>
 #include <limits.h>
+#include "ipc_semaphore.h"
+
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
 
 json_object * cache;
 json_object * config;
@@ -36,6 +41,8 @@ json_object * config;
 char * cacheFile;
 long long int * cacheVersion;
 size_t cacheLength;
+semaphore cache_semaphore;
+semaphore config_semaphore;
 
 /* definition of local utility functions */
 void update_cache();
@@ -56,6 +63,9 @@ void cache_init(){
     cacheFile = (char *) mmap(NULL, cacheLength,
             PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, fd, 0);
     if (cacheFile == MAP_FAILED ) errx(1,"failed");
+    // setup semaphores.
+    cache_semaphore = semaphore_create(1);
+    config_semaphore = semaphore_create(1);
 }
 
 json_object * getCache(const char * plugin_prefix){
@@ -109,6 +119,14 @@ void addCache(const char * plugin_prefix, const char * fname, json_object * entr
     json_object_put(cache_entry);
 }
 
+void updateCache(const char * plugin_prefix, json_object * pcache){
+    json_object_get(pcache);
+    update_cache();
+    json_object_object_add(cache, plugin_prefix, pcache);
+    push_cache();
+    json_object_put(pcache);
+}
+
 void updateFileCache(const char * plugin_prefix, const char * fname, json_object * changes){
     json_object * fcache = getFileCache(plugin_prefix,fname);
     if (fcache == NULL) {
@@ -135,6 +153,7 @@ utilities get_utility_functions(){
     u.getCache = getCache;
     u.addCache = addCache;
     u.updateFileCache = updateFileCache;
+    u.updateCache = updateCache;
     u.getFileCache = getFileCache;
     u.getConfig = getConfig;
     u.addConfig = addConfig;
@@ -146,7 +165,10 @@ utilities get_utility_functions(){
 
 void update_cache(){
     if (cache != NULL) json_object_put(cache);
+    semaphore_wait(cache_semaphore);
     cache = json_tokener_parse(cacheFile);
+    semaphore_post(cache_semaphore);
+
     // cache = json_object_from_file("cache.json");
     if (cache == NULL){
         cache = json_object_new_object();
@@ -158,7 +180,11 @@ void update_config(){
     char path[PATH_MAX];
     strcpy(path,getenv("HOME"));
     strcat(path,"/.config.json");
+
+    semaphore_wait(config_semaphore);
     config = json_object_from_file(path);
+    semaphore_post(config_semaphore);
+
     if (config == NULL){
         config = json_object_new_object();
     }
@@ -173,8 +199,10 @@ void push_cache(){
     if (strlen(string) > cacheLength){
         printf("the string is too long\n");
     }
+    semaphore_wait(cache_semaphore);
     memcpy(cacheFile, string, strlen(string));
     msync(cacheFile,strlen(string),MS_SYNC|MS_INVALIDATE);
+    semaphore_post(cache_semaphore);
     printf("cache pushed\n");
 }
 
@@ -182,5 +210,7 @@ void push_config(){
     char path[PATH_MAX];
     strcpy(path,getenv("HOME"));
     strcat(path,"/.config.json");
+    semaphore_wait(config_semaphore);
     json_object_to_file(path,config);
+    semaphore_post(config_semaphore);
 }

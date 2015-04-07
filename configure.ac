@@ -29,6 +29,8 @@ AC_CHECK_LIB([rest], [rest_build_param])
 AC_CHECK_LIB([json-c], [json_object_new_object])
 # libuv
 AC_CHECK_LIB([uv], [uv_run])
+#posix semaphore and shared memory
+AC_CHECK_LIB([rt], [shm_open])
 
 # inotify:
 AC_CHECK_HEADER(sys/inotify.h, 
@@ -59,5 +61,5 @@ AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([ftruncate mkdir strchr strdup strerror])
 
-AC_OUTPUT(Makefile librest/Makefile libdropbox/Makefile libexec/Makefile src/Makefile )
+AC_OUTPUT(Makefile librest/Makefile libdropbox/Makefile libgdrive/Makefile libexec/Makefile src/Makefile )
 

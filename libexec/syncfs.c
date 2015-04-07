@@ -19,12 +19,14 @@
  * THE SOFTWARE.
  */
 
+#define _XOPEN_SOURCE 500
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <ftw.h>
 /* "readdir" etc. are defined here. */
 #include <dirent.h>
 /* limits.h defines "PATH_MAX". */
@@ -102,7 +104,8 @@ int update_file_cache(char * filename, int update){
     json_object_object_add(cache_entry,"modified", json_object_new_int64((long long int)details.st_mtime));
     json_object_object_add(cache_entry, "version", json_object_new_int64(ver));
     printf ("cache for file %s : %s\n",filename, json_object_to_json_string(cache_entry));
-    utils.addCache(PLUGIN_PREFIX,filename,cache_entry);
+    utils.addCache(PLUGIN_PREFIX,filename,json_object_get(cache_entry));
+    json_object_put(cache_entry);
     return metadata_changed;
 }
 
@@ -121,6 +124,8 @@ void watch_dir_recurse(char * dir_name){
     while (1) {
         struct dirent * entry;
         const char * d_name;
+        struct stat sb;
+        char path[PATH_MAX];
         /* "Readdir" gets subsequent entries from "d". */
         entry = readdir (d);
         if (! entry) {
@@ -130,26 +135,23 @@ void watch_dir_recurse(char * dir_name){
         }
         d_name = entry->d_name;
         /* See if "entry" is a subdirectory of "d". */
-        if (entry->d_type & DT_DIR) {
-            /* Check that the directory is not "d" or d's parent. */
-            if (strcmp (d_name, "..") != 0 &&
-                    strcmp (d_name, ".") != 0) {
-                int path_length;
-                char path[PATH_MAX];
+        if (snprintf(path, PATH_MAX, "%s/%s", dir_name, d_name) >= PATH_MAX){
+            fprintf (stderr, "Path length has got too long.\n");
+            exit (EXIT_FAILURE);
+        }
 
-                path_length = snprintf (path, PATH_MAX,
-                        "%s/%s", dir_name, d_name);
-                //printf ("%s\n", path);
-                if (path_length >= PATH_MAX) {
-                    fprintf (stderr, "Path length has got too long.\n");
-                    exit (EXIT_FAILURE);
-                }
-                /* Recursively call "list_dir" with the new path. */
+        if (stat(path, &sb)) {
+            fprintf(stderr, "failed to stat '%s'\n", path);
+            continue;
+        }
+        if (S_ISDIR(sb.st_mode)) {
+            /* Check that the directory is not "d" or d's parent. */
+            if (strcmp (d_name, "..") != 0 && strcmp (d_name, ".") != 0) {
                 watch_dir_recurse (path);
             }
         }else {
             // normal file. Add to cache.
-            char * fileName = malloc(PLUGIN_PREFIX_LEN + strlen(dir_name) + strlen(entry->d_name) +2);
+            char * fileName = (char*) malloc(PLUGIN_PREFIX_LEN + strlen(dir_name) + strlen(entry->d_name) +2);
             strcpy(fileName, PLUGIN_PREFIX);
             strcat(fileName, dir_name);
             strcat(fileName, "/");
@@ -257,10 +259,21 @@ int sync_mkdir(char * path){
     return mkpath(path,0777);
 }
 
+int remove_cb (const char * fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf){
+    int rv = remove(fpath);
+
+    if (rv)
+        perror(fpath);
+
+    return rv;
+}
+
 int sync_rm(char * path){
     path += PLUGIN_PREFIX_LEN;
     printf("trying to delete %s\n",path);
-    return remove(path);
+    // recursively deleting directory
+
+    return nftw(path, remove_cb, 64, FTW_DEPTH |FTW_PHYS);
 }
 
 int sync_mv(char*from,char*to){
