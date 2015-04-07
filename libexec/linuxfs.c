@@ -32,6 +32,10 @@ void local_init(){
   }
 }
 
+void local_unload(){
+    free(watchpoints);
+}
+
 void sync_listen(int (*cb)( const char*,int)){
   update_event = cb;
   int length;
