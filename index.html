@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Syncd : Synchronization service for linux with plugins for various endpoints hopefully dropbox, Google Drive, etc">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Syncd</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/MobiusHorizons/syncd">View on GitHub</a>
+
+          <h1 id="project_title">Syncd</h1>
+          <h2 id="project_tagline">Synchronization service for linux with plugins for various endpoints hopefully dropbox, Google Drive, etc</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/MobiusHorizons/syncd/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/MobiusHorizons/syncd/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="syncd" class="anchor" href="#syncd" aria-hidden="true"><span class="octicon octicon-link"></span></a>syncd</h1>
+
+<p>Synchronization service for linux with plugins for various endpoints hopefully dropbox, Google Drive, etc</p>
+
+<p>more info can be found in the <a href="https://github.com/MobiusHorizons/syncd/wiki" title="Wiki">wiki</a></p>
+
+<p>Build/installation instructions can be found in the INSTALL file or on the wiki</p>
+
+<h1>
+<a id="building" class="anchor" href="#building" aria-hidden="true"><span class="octicon octicon-link"></span></a>Building</h1>
+
+<p>You will need <code>libcurl</code> and <code>json-c</code> development libraries installed. </p>
+
+<p>Then run these commands from the checked out folder.</p>
+
+<pre><code>./autogen.sh #build the configure script.
+./configure
+make
+sudo make install.
+</code></pre>
+
+<h1>
+<a id="running" class="anchor" href="#running" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running</h1>
+
+<p>Once you have built and installed <strong>syncd</strong>, you will need to create a rules file.</p>
+
+<p>This file should be located in your home folder, and be named <code>.syncd-rules.json</code>.
+This is a json formatted file specifying where to copy files to/from.</p>
+
+<p>The format of this file is as follows:</p>
+
+<pre><code>{ 
+    "plugin:///src/folder/" : [ "plugin:///dest/1/", "plugin:///dest/2/",
+    "dropbox:///Documents/" : [ "fs:///home/user/Documents/"]
+}
+</code></pre>
+
+<p>The current plugin prifixes are </p>
+
+<ul>
+<li>
+<code>dropbox://</code> for dropbox</li>
+<li>
+<code>fs://</code> for the filesystem</li>
+<li>
+<code>gdrive://</code> for Google Drive</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Syncd maintained by <a href="https://github.com/MobiusHorizons">MobiusHorizons</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
