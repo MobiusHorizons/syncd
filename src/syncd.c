@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <ltdl.h>
 #include "../libltdl/ltdl.h"
+#include <string.h>
 #include <plugin.h>
 
 typedef struct {
@@ -158,7 +159,7 @@ int loadPlugins(Plugin **return_plugins){
 	int num_plugins = 0, i=0;
 	DIR * dp;
 	struct dirent *ep;
-    printf("looking for plugins in %s\n", LIBDIR );
+  printf("looking for plugins in %s\n", LIBDIR );
 	dp = opendir(LIBDIR ); //TODO this should pull from config.h
 	char configPath[PATH_MAX];
 	strcpy(configPath, getenv("HOME"));
@@ -171,6 +172,9 @@ int loadPlugins(Plugin **return_plugins){
 #endif
 				char * filename = (char*) malloc(strlen(ep->d_name) + strlen(LIBDIR)+2);
 				sprintf(filename,"%s/%s",LIBDIR,ep->d_name);
+				char * ext = rindex(ep->d_name, '.');
+				if(strcmp(ext, ".la") != 0) continue; // skip files that aren't named *.la (libldtl shared library)
+				printf("ext = '%s'\n",ext);
 				p.ptr = lt_dlopen(filename);
 				if (p.ptr != NULL){
 					plugins = (Plugin *) realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
