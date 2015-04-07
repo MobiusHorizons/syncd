@@ -19,8 +19,6 @@
  * THE SOFTWARE.
  */
 
-#include "libgdrive/gdrive_api.h"
-#include "../os.h"
 #define  _XOPEN_SOURCE 500
 #include <libgen.h>
 #include "../libgdrive/gdrive_api.h"
