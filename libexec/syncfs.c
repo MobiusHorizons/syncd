@@ -59,7 +59,9 @@ int num_open_files;
 int first_open_files;
 utilities utils;
 
-
+const char * get_prefix(){
+	return PLUGIN_PREFIX;
+}
 
 int update_file_cache(char * filename, int update){
     int metadata_changed = 0;

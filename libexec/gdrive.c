@@ -496,6 +496,10 @@ void get_updates(int (*cb)(const char*,int)){
 	free(next_page_token);
 }
 
+const char * get_prefix(){
+	return PLUGIN_PREFIX;
+}
+
 /** void sync_listen( int ( * call_back )( const char * path, int type ) )
 * listens for changes. calls call_back for each change
 * path is the name of the file that changed

@@ -122,6 +122,10 @@ void update_cache(json_object * entry,const char *fname){
     utils.addCache(PLUGIN_PREFIX, fname, cfile);
 }
 
+const char * get_prefix(){
+	return PLUGIN_PREFIX;
+}
+
 char * init(init_args args){
     utils = args.utils;
     curl_global_init(CURL_GLOBAL_DEFAULT);

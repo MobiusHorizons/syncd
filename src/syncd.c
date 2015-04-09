@@ -171,6 +171,29 @@ int cb(const char * path, int mask){
 		return 0;
 	}
 
+lt_dlhandle loadPlugin(const char * filename ){
+	const char * ext = rindex(filename, '.');
+	if(strcmp(ext, ".la") != 0) return NULL;
+	lt_dlhandle out = lt_dlopen(filename);
+	const char * (*get_prefix)() = (const char * (*)()) lt_dlsym (out, "get_prefix");
+	if ( get_prefix != NULL){
+		json_object_object_foreach(rules,base,targets){
+			int i;
+			const char * prefix = get_prefix();
+			if (strncmp(base, prefix, strlen(prefix)) == 0) {
+				return out;
+			}
+			for(i = 0; i < json_object_array_length(targets); i++){
+				json_object * t = json_object_array_get_idx(targets, i);
+				if (strncmp(json_object_get_string(t),prefix,strlen(prefix)) == 0){
+					return out;
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
 int loadPlugins(Plugin **return_plugins){
 	Plugin * plugins = NULL;
 	Plugin p;
@@ -193,10 +216,7 @@ int loadPlugins(Plugin **return_plugins){
 #endif
 				char * filename = (char*) malloc(strlen(ep->d_name) + strlen(LIBDIR)+2);
 				sprintf(filename,"%s/%s",LIBDIR,ep->d_name);
-				char * ext = rindex(ep->d_name, '.');
-				if(strcmp(ext, ".la") != 0) continue; // skip files that aren't named *.la (libldtl shared library)
-				printf("ext = '%s'\n",ext);
-				p.ptr = lt_dlopen(filename);
+				p.ptr = loadPlugin(filename);
 				if (p.ptr != NULL){
 					plugins = (Plugin *) realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
 					S_INIT init = (S_INIT) lt_dlsym(p.ptr,"init");
@@ -217,6 +237,7 @@ int loadPlugins(Plugin **return_plugins){
 	*return_plugins = plugins;
 	return num_plugins;
 }
+
 
 void unloadPlugins(Plugin *plugins, int num){
 	int i;
@@ -255,6 +276,9 @@ int main(int argc, char** argv){
     strcpy(path,getenv("HOME"));
     strcat(path,"/.syncd-rules.json");
 	rules = json_object_from_file(path);
+	if (rules == NULL){
+		rules = json_object_new_object();
+	}
 	// init shared memory
 	cache_init();
 	num_plugins = loadPlugins(&plugins);
