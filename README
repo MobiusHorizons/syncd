@@ -6,12 +6,33 @@ Synchronization service for linux with plugins for various endpoints hopefully d
 more info can be found in the [wiki](https://github.com/MobiusHorizons/syncd/wiki "Wiki")
 
 Build/installation instructions can be found in the INSTALL file or on the wiki
+# Building
 
-At the moment, this appears to work:
-$ rm -r m4
-$ aclocal && autoconf && ./autogen.sh
-$ ./configure
-$ make
-# make install
-$ cp rules.json.example ~/.syncd-rules.json #copy sample rules into place
-$ vim ~/.syncd-rules.json #configure rules to suit
+You will need `libcurl` and `json-c` development libraries installed. 
+
+Then run these commands from the checked out folder.
+
+    ./autogen.sh #build the configure script.
+    ./configure
+    make
+    sudo make install.
+
+
+# Running
+
+Once you have built and installed **syncd**, you will need to create a rules file.
+
+This file should be located in your home folder, and be named `.syncd-rules.json`.
+This is a json formatted file specifying where to copy files to/from.
+
+The format of this file is as follows:
+
+    { 
+        "plugin:///src/folder/" : [ "plugin:///dest/1/", "plugin:///dest/2/",
+        "dropbox:///Documents/" : [ "fs:///home/user/Documents/"]
+    }
+
+The current plugin prifixes are 
+- `dropbox://` for dropbox
+- `fs://` for the filesystem
+- `gdrive://` for Google Drive
