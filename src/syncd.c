@@ -25,6 +25,7 @@
 #include "../libltdl/ltdl.h"
 #include <string.h>
 #include <plugin.h>
+#include <sys/stat.h>
 
 typedef struct {
 	lt_dlhandle ptr;
@@ -258,6 +259,27 @@ void add_watch(char* path){
 	}
 }
 
+void setupConfig(){
+	// Create the directories if needed.
+	char path [PATH_MAX];
+	strcpy(path, getenv("HOME"));
+	strcat(path, "/.config/syncd");
+	mkdir(path,0700);
+	strcpy(path, getenv("HOME"));
+	strcat(path, "/.cache/syncd");
+	mkdir(path,0700);
+	strcpy(path, getenv("HOME"));
+	strcat(path, "/.config/syncd/rules.json");
+	rules = json_object_from_file(path);
+	// create the rules file if necessary.
+	if (rules == NULL){
+		rules = json_object_new_object();
+		json_object_to_file(path, rules);
+	}
+}
+
+
+
 int main(int argc, char** argv){
 	//LTDL_SET_PRELOADED_SYMBOLS();
 	lt_dlinit();
@@ -273,13 +295,8 @@ int main(int argc, char** argv){
 	}
 	printf ("plugin_to_run = %d\n",plugin_to_run);
     char path[PATH_MAX];
-    strcpy(path,getenv("HOME"));
-    strcat(path,"/.syncd-rules.json");
-	rules = json_object_from_file(path);
-	if (rules == NULL){
-		rules = json_object_new_object();
-	}
 	// init shared memory
+	setupConfig();
 	cache_init();
 	num_plugins = loadPlugins(&plugins);
 	printf("got plugins\n");

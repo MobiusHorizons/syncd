@@ -53,10 +53,10 @@ void push_cache();
 /* public functions */
 void cache_init(){
     //set up shared memory
-    cacheLength = 100 * 1024 * 1024; // 100 MB for now.
+    cacheLength = 10 * 1024 * 1024; // 100 MB for now.
     char path[PATH_MAX];
     strcpy(path, getenv("HOME"));
-    strcat(path, "/.cache.json");
+    strcat(path, "/.cache/syncd/cache.json");
     int fd = open(path,O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
     ftruncate(fd,cacheLength);
     printf("fd = %d\n",fd);
@@ -179,7 +179,7 @@ void update_config(){
     if (config != NULL) json_object_put(config);
     char path[PATH_MAX];
     strcpy(path,getenv("HOME"));
-    strcat(path,"/.config.json");
+    strcat(path,"/.config/syncd/config.json");
 
     semaphore_wait(config_semaphore);
     config = json_object_from_file(path);
@@ -209,7 +209,7 @@ void push_cache(){
 void push_config(){
     char path[PATH_MAX];
     strcpy(path,getenv("HOME"));
-    strcat(path,"/.config.json");
+    strcat(path,"/.config/syncd/config.json");
     semaphore_wait(config_semaphore);
     json_object_to_file(path,config);
     semaphore_post(config_semaphore);
