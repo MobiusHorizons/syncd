@@ -24,6 +24,10 @@
 #include "../libgdrive/gdrive_api.h"
 #include "../src/os.h"
 #include "../src/json_helper.h"
+
+
+#define PLUGIN_PREFIX "gdrive://"
+#define PLUGIN_PREFIX_LEN 9
 #include "../src/plugin.h"
 #include "gdrive_cache.h"
 
@@ -32,8 +36,6 @@
 #define __GLOBAL_CLIENT_ID      "969830472849-93kt0dqjevn8jgr3g6erissiocdhk2fo.apps.googleusercontent.com"
 #define REFRESH_TOKEN "1/8obRmFxvhhebWSCYckmw_AfUlfTD-ERnwvoro8tMAKI"
 
-#define PLUGIN_PREFIX "gdrive://"
-#define PLUGIN_PREFIX_LEN 9
 
 
 bool check_error(json_object* obj);
@@ -507,16 +509,18 @@ const char * get_prefix(){
 * (directory, update, create, delete, move, etc)
 */
 void sync_listen( int (*call_back)(const char*path,int type)){
+  CATCH_EVENTS
 	// cludge because we are polling.
 	#define poll_time 30 // poll time in seconds
     time_t poll_start;
     time_t now;
 	while(1){
-        time(&poll_start);
+    time(&poll_start);
 		get_updates(call_back);
-        if (time(&now) - poll_start < poll_time){
-    		sleep(poll_time - (now - poll_start));
-        }
+    CLEAN_BREAK
+    if (time(&now) - poll_start < poll_time){
+		sleep(poll_time - (now - poll_start));
+    }
 	}
 }
 

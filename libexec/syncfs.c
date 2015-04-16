@@ -32,10 +32,11 @@
 /* limits.h defines "PATH_MAX". */
 #include <limits.h>
 #include <sys/stat.h>
+#define PLUGIN_PREFIX "file://"
+#define PLUGIN_PREFIX_LEN 7
 #include <src/plugin.h>
 
-#define PLUGIN_PREFIX "fs://"
-#define PLUGIN_PREFIX_LEN 5
+
 
 char* init(init_args);
 void add_watch(char *);

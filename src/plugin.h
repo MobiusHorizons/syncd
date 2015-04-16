@@ -26,6 +26,8 @@
 #include "cache.h"
 #include <stdio.h>
 #include <ltdl.h>
+#include <signal.h>
+
 #define S_CLOSE_WRITE   0x00000008
 #define S_CLOSE_NOWRITE 0x00000010
 #define S_CLOSE         (S_CLOSE_WRITE | S_CLOSE_NOWRITE)
@@ -75,4 +77,19 @@ typedef struct{
 
 //int loadPlugins(plugin ***plugins,
 //                char     *dir);
+#ifdef PLUGIN_PREFIX
+  bool __sigterm__ = false;
+  #define CATCH_EVENTS __catch_events();
+  void __set_sigterm(int signum){
+    __sigterm__ = true;
+  }
+  void __catch_events(){
+    struct sigaction action;
+    memset(&action, 0, sizeof(struct sigaction));
+    action.sa_handler = __set_sigterm;
+    sigaction(SIGTERM, &action, NULL);
+  }
+  #define CLEAN_BREAK  if (__sigterm__) return;
+#endif
+
 #endif

@@ -58,6 +58,7 @@ void local_unload(){
 }
 
 void sync_listen(int (*cb)( const char*,int)){
+  CATCH_EVENTS
   update_event = cb;
   int length;
   char buffer[EVENT_BUF_LEN];
@@ -83,5 +84,6 @@ void sync_listen(int (*cb)( const char*,int)){
         }
         i += EVENT_SIZE + event->len;
       }
+      CLEAN_BREAK
     }
   }
