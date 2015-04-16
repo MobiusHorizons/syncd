@@ -22,13 +22,13 @@ Then run these commands from the checked out folder.
 
 Once you have built and installed **syncd**, you will need to create a rules file.
 
-This file should be located in your home folder, and be named `.syncd-rules.json`.
+This file should be located in the syncd config directory at `$HOME/.config/syncd/rules.json`.
 This is a json formatted file specifying where to copy files to/from.
 
 The format of this file is as follows:
 
     { 
-        "plugin:///src/folder/" : [ "plugin:///dest/1/", "plugin:///dest/2/",
+        "plugin:///src/folder/" : [ "plugin:///dest/1/", "plugin:///dest/2/"],
         "dropbox:///Documents/" : [ "fs:///home/user/Documents/"]
     }
 
