@@ -12,7 +12,7 @@ void logging_init(const char *filename)
 
 void logging_log(const char *fmt, ...)
 {
-	fprintf(__logfile, "Error at %s, line %d: ", __FILE__, __LINE__);
+	fprintf(__logfile, "LOG  %s:%d -- ", __FILE__, __LINE__);
 	va_list args;
 	va_start(args, fmt);
 	vfprintf(__logfile, fmt, args);
