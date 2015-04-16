@@ -26,6 +26,7 @@
 #include <string.h>
 #include <plugin.h>
 #include <sys/stat.h>
+#include "log.h"
 
 typedef struct {
 	lt_dlhandle ptr;
@@ -248,6 +249,7 @@ void unloadPlugins(Plugin *plugins, int num){
 	}
 	free(plugins);
 	lt_dlexit();
+	logging_close();
 }
 
 void add_watch(char* path){
@@ -265,6 +267,8 @@ void setupConfig(){
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/.config/syncd");
 	mkdir(path,0700);
+	strcat(path,"/log.txt");
+	logging_init(path);
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/.cache/syncd");
 	mkdir(path,0700);
