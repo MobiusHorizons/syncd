@@ -47,6 +47,7 @@ json_object * local_cache;
 utilities global_utils;
 utilities local_utils;
 utilities utils;
+init_args args;
 
 json_object * lc_get(){
     if (local_cache == NULL){
@@ -61,7 +62,7 @@ json_object * lc_get(){
 void lc_addCache(const char * plugin_prefix, const char * fname, json_object * entry){
     json_object * c = lc_get();
     if (fname != NULL && strlen(fname) != 0 && entry != NULL){
-        printf("adding cache entry for %s\n", fname);
+        args.log(LOGARGS,"adding cache entry for %s\n", fname);
         //puts(json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
         json_object * cache_entry = json_object_get(entry);
         json_object_object_add(c, fname, cache_entry);
@@ -294,8 +295,8 @@ void reauth(){
 bool check_error(json_object* obj){
     if (obj == NULL) return true;
 	if (json_object_object_get_ex(obj,"error",NULL)){
-        printf("object has error: %s\n", json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY));
-		printf("doing reauth\n");
+        args.log(LOGARGS,"object has error: %s\n", json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY));
+		args.log(LOGARGS,"doing reauth\n");
 		reauth();
 		return true;
 	}
@@ -306,10 +307,11 @@ bool check_error(json_object* obj){
 * returns plugin prefix (gdrive://)
 * performs any startup tasks such as authentication
 */
-const char * init(init_args args){
+const char * init(init_args a){
+  args = a;
 	global_utils = local_utils = utils = args.utils;
     gdrive_cache_init(args.utils);
-
+    gdrive_cache_set_args(args);
     /* set up local cache utils */
     local_utils.addCache = lc_addCache;
     local_utils.getCache = lc_getCache;
@@ -367,9 +369,9 @@ void get_updates(int (*cb)(const char*,int)){
         if (temp != NULL) next_page_token = strdup(temp);
         int i;
         {
-            //printf("id=%s\n",json_object_to_json_string(changes));
+            //args.log(LOGARGS,"id=%s\n",json_object_to_json_string(changes));
             long temp = json_get_int(changes,"largestChangeId", 0);
-            printf("largestchangeID = %ld\n",temp);
+            args.log(LOGARGS,"largestchangeID = %ld\n",temp);
             char  largestChangeId[128];
             sprintf(largestChangeId,"%ld",temp+1);
             config = json_object_get(utils.getConfig(PLUGIN_PREFIX));
@@ -381,13 +383,13 @@ void get_updates(int (*cb)(const char*,int)){
             for ( i = 0; i < json_object_array_length(items);i++){
                 json_object * change = json_object_array_get_idx(items,i);
                 const char * id    = json_get_string(change,"fileId");
-                if (json_get_bool(change, "deleted", false)) printf("%s was deleted\n",id);
+                if (json_get_bool(change, "deleted", false)) args.log(LOGARGS,"%s was deleted\n",id);
                 if (
                     !json_get_bool(change,"deleted",false) &&
                     json_object_object_get_ex(change,"file",&change)
                     ){
                         if (strcmp(json_get_string(change, "mimeType"), "application/vnd.google-apps.folder") == 0){
-                            printf("folder id '%s'\n", id);
+                            args.log(LOGARGS,"folder id '%s'\n", id);
                             update_cache(id, NULL, update_metadata(id,change));
                         }
                 }
@@ -396,14 +398,14 @@ void get_updates(int (*cb)(const char*,int)){
             for ( i = 0; i < json_object_array_length(items);i++){
                 json_object * change = json_object_array_get_idx(items,i);
                 const char * id    = json_get_string(change,"fileId");
-                printf("working on changeid %lld\n",json_get_int(change, "id", 0));
+                args.log(LOGARGS,"working on changeid %lld\n",json_get_int(change, "id", 0));
                 if (
                     !json_get_bool(change,"deleted",false) &&
                     json_object_object_get_ex(change,"file",&change)
                     ){
-                        printf("not deleted\n");
+                        args.log(LOGARGS,"not deleted\n");
                         bool is_trashed = json_get_bool(change, "explicitlyTrashed", false);
-                        printf("is_trashed = %s\n", is_trashed? "true":"false");
+                        args.log(LOGARGS,"is_trashed = %s\n", is_trashed? "true":"false");
 
                         bool can_sync = json_object_object_get_ex(change,"downloadUrl", NULL);
                         if (!is_trashed && !can_sync){
@@ -439,7 +441,7 @@ void get_updates(int (*cb)(const char*,int)){
                         if (is_trashed){
                             mask = S_DELETE;
                             update_version(id,path);
-                            printf("file '%s' with id '%s' was trashed\n", path, id);
+                            args.log(LOGARGS,"file '%s' with id '%s' was trashed\n", path, id);
                         }
 
                         char * fullPath = (char *) malloc(PLUGIN_PREFIX_LEN + strlen(path) + 2);
@@ -449,7 +451,7 @@ void get_updates(int (*cb)(const char*,int)){
                         json_add_int(aggregate_changes,fullPath,mask);
                         free(fullPath);
 
-                        printf("file id: '%s', path: '%s' %s on %s\n",
+                        args.log(LOGARGS,"file id: '%s', path: '%s' %s on %s\n",
                         id,
                         path,
                         is_create?"created":"modified",
@@ -457,7 +459,7 @@ void get_updates(int (*cb)(const char*,int)){
                         );
                         free(path);
                     } else {
-                        printf("deleting file with id %s\n", id);
+                        args.log(LOGARGS,"deleting file with id %s\n", id);
                         json_object * file = get_metadata(id, NULL);
                         int mask = 0;
                         if (file != NULL) {
@@ -465,7 +467,7 @@ void get_updates(int (*cb)(const char*,int)){
                             if (json_get_bool(file, "is_dir", false)) mask|=S_DIR;
                             const char * path = json_get_string(file, "path");
                             if (path != NULL){
-                                printf("file '%s' with id '%s' was found in cache\n", path, id);
+                                args.log(LOGARGS,"file '%s' with id '%s' was found in cache\n", path, id);
                                 update_version(id,path);
                                 char * fullPath = (char *) malloc(PLUGIN_PREFIX_LEN + strlen(path) + 2);
                                 strcpy (fullPath, PLUGIN_PREFIX);
@@ -475,7 +477,7 @@ void get_updates(int (*cb)(const char*,int)){
                                 free(fullPath);
                             }
                         }
-                        printf("file id: '%s, deleted\n",id);
+                        args.log(LOGARGS,"file id: '%s, deleted\n",id);
                     }
                 }
             }

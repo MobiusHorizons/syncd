@@ -44,6 +44,7 @@ void watch_dir(char *);
 void sync_listen(int(*)(const char*,int));
 int update_file_cache(char*,int);
 int(*update_event)(const char*,int);
+init_args args;
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -67,23 +68,23 @@ const char * get_prefix(){
 int update_file_cache(char * filename, int update){
     int metadata_changed = 0;
     struct stat details;
-    printf("filename = %s\n",filename);
+    args.log(LOGARGS,"filename = %s\n",filename);
     json_object * cache_entry = utils.getFileCache(PLUGIN_PREFIX,filename);
     if (cache_entry == NULL){
         metadata_changed = S_CREATE;
-        printf("cache was null for %s\n",filename);
+        args.log(LOGARGS,"cache was null for %s\n",filename);
         cache_entry = json_object_new_object();
     }
     if (stat(filename, &details) == -1){
         metadata_changed = S_DELETE;
         json_object_object_del(cache_entry,"size");
         json_object_object_del(cache_entry,"modified");
-        printf("cannot stat '%s'\n",filename);
+        args.log(LOGARGS,"cannot stat '%s'\n",filename);
     } else { // stat succeeded
         if (S_ISDIR(details.st_mode)){
           metadata_changed |= S_DIR;
         }
-        printf("size = %ld; mtime= %ld\n",details.st_size, details.st_mtime);
+        args.log(LOGARGS,"size = %ld; mtime= %ld\n",details.st_size, details.st_mtime);
     }
     long long int ver = 0;
     if (update) {
@@ -101,12 +102,12 @@ int update_file_cache(char * filename, int update){
         }
     } else {
         ver = json_get_int(cache_entry, "next_version",1);
-        printf("next_Version = %lld\n",ver);
+        args.log(LOGARGS,"next_Version = %lld\n",ver);
     }
     json_object_object_add(cache_entry,"size", json_object_new_int64(details.st_size));
     json_object_object_add(cache_entry,"modified", json_object_new_int64((long long int)details.st_mtime));
     json_object_object_add(cache_entry, "version", json_object_new_int64(ver));
-    printf ("cache for file %s : %s\n",filename, json_object_to_json_string(cache_entry));
+    args.log(LOGARGS,"cache for file %s : %s\n",filename, json_object_to_json_string(cache_entry));
     utils.addCache(PLUGIN_PREFIX,filename,json_object_get(cache_entry));
     json_object_put(cache_entry);
     return metadata_changed;
@@ -144,7 +145,7 @@ void watch_dir_recurse(char * dir_name){
         }
 
         if (stat(path, &sb)) {
-            fprintf(stderr, "failed to stat '%s'\n", path);
+            args.log(LOGARGS,/*loggging_level.Error,*/ "failed to stat '%s'\n", path);
             continue;
         }
         if (S_ISDIR(sb.st_mode)) {
@@ -159,7 +160,7 @@ void watch_dir_recurse(char * dir_name){
             strcat(fileName, dir_name);
             strcat(fileName, "/");
             strcat(fileName, entry->d_name);
-            printf("filename = %s\n",fileName);
+            args.log(LOGARGS,"filename = %s\n",fileName);
             int mask;
             if ((mask = update_file_cache(fileName + PLUGIN_PREFIX_LEN, 1)) != 0){
               update_event(fileName, mask);
@@ -180,7 +181,8 @@ void watch_dir (char * dir_name){
     watch_dir_recurse(dir_name);
 }
 
-char * init(init_args args){
+char * init(init_args a){
+		args = a;
     utils = args.utils;
     update_event = args.event_callback;
     local_init();
@@ -203,14 +205,14 @@ char * init(init_args args){
   }
   }
  *buf = b;
- printf("read %d bytes\n",n);
+ args.log(LOGARGS,"read %d bytes\n",n);
  return n - 1024;
  }*/
 
 
 FILE * sync_open (char * path){
     path += PLUGIN_PREFIX_LEN;
-    printf("opening %s\n",path);
+    args.log(LOGARGS,"opening %s\n",path);
     return fopen(path, "rb");
 }
 
@@ -240,14 +242,14 @@ int sync_write(char * path, FILE * fo){
     if (fd != NULL && fo != NULL){
         while ( (in = fread(data,sizeof(char),1024,fo) ) > 0){
             t+= in;
-            printf("\rread %d bytes",t); fflush(stdout);
+            args.log(LOGARGS,"\rread %d bytes",t);
             out += fwrite(data,sizeof(char),in,fd);
         }
-        printf("\n");
+        args.log(LOGARGS,"\n");
         fclose(fd);
         return out;
     } else {
-        printf("error opening %s\n",path);
+        args.log(LOGARGS,"error opening %s\n",path);
         return -1;
     }
 }
@@ -258,7 +260,7 @@ void sync_unload(){
 
 int sync_mkdir(char * path){
     path += PLUGIN_PREFIX_LEN;
-    printf("mkdir %s\n",path);
+    args.log(LOGARGS,"mkdir %s\n",path);
     return mkpath(path,0777);
 }
 
@@ -273,7 +275,7 @@ int remove_cb (const char * fpath, const struct stat *sb, int typeflag, struct F
 
 int sync_rm(char * path){
     path += PLUGIN_PREFIX_LEN;
-    printf("trying to delete %s\n",path);
+    args.log(LOGARGS,"trying to delete %s\n",path);
     // recursively deleting directory
 
     return nftw(path, remove_cb, 64, FTW_DEPTH |FTW_PHYS);
@@ -282,6 +284,6 @@ int sync_rm(char * path){
 int sync_mv(char*from,char*to){
     from += PLUGIN_PREFIX_LEN;
     to += PLUGIN_PREFIX_LEN;
-    printf("trying to move %s to %s\n",from,to);
+    args.log(LOGARGS,"trying to move %s to %s\n",from,to);
     return rename(from,to);
 }

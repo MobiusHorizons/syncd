@@ -32,7 +32,7 @@ static int watchpoints_size;
 
 void add_watch(char * dir){
   int wp  = inotify_add_watch( inotify_fd, dir, IN_CREATE | IN_DELETE | IN_CLOSE_WRITE | IN_MOVE);
-  printf("adding directory: %s, wp = %d\n",dir,wp);
+  args.log(LOGARGS,"adding directory: %s, wp = %d\n",dir,wp);
   char * dir_local = strdup(dir);
     while (wp >= watchpoints_size) {
         watchpoints_size *= 2;
@@ -76,7 +76,7 @@ void sync_listen(int (*cb)( const char*,int)){
           char * filename = fp + PLUGIN_PREFIX_LEN;
           update_file_cache(filename,1);
           if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)){ // new directory created
-            printf("%.4x = %.4x\n",event->mask, (IN_CREATE|IN_ISDIR));
+            args.log(LOGARGS,"%.4x = %.4x\n",event->mask, (IN_CREATE|IN_ISDIR));
             add_watch(fp + PLUGIN_PREFIX_LEN);
           }
           if (cb != NULL) cb(fp,event->mask);

@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include "ipc_semaphore.h"
+#include "log.h"
 
 #ifndef MAP_FILE
 #define MAP_FILE 0
@@ -59,7 +60,7 @@ void cache_init(){
     strcat(path, "/.cache/syncd/cache.json");
     int fd = open(path,O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
     ftruncate(fd,cacheLength);
-    printf("fd = %d\n",fd);
+    logging_log(LOGARGS,"fd = %d\n",fd);
     cacheFile = (char *) mmap(NULL, cacheLength,
             PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, fd, 0);
     if (cacheFile == MAP_FAILED ) errx(1,"failed");
@@ -71,8 +72,8 @@ void cache_init(){
 json_object * getCache(const char * plugin_prefix){
     json_object * pluginCache;
     update_cache(); // force synchronization.
-    //printf("cache : %s\n",json_object_to_json_string(cache));
-    //printf("got cache\n");
+    //logging_log(LOGARGS,"cache : %s\n",json_object_to_json_string(cache));
+    //logging_log(LOGARGS,"got cache\n");
     if (json_object_object_get_ex(cache, plugin_prefix, &pluginCache)){
         return pluginCache;
     }
@@ -82,13 +83,13 @@ json_object * getCache(const char * plugin_prefix){
 
 json_object * getFileCache(const char * plugin_prefix,const char * fname){
     json_object * pcache = getCache(plugin_prefix);
-    printf("getFileCache(\"%s\",\"%s\") ",plugin_prefix,fname);
+    logging_log(LOGARGS,"getFileCache(\"%s\",\"%s\") \n",plugin_prefix,fname);
     json_object * fcache;
     if (pcache != NULL && json_object_object_get_ex(pcache, fname, &fcache)){
-        puts(json_object_to_json_string(fcache));
+        logging_log(LOGARGS,"%s\n",json_object_to_json_string(fcache));
         return fcache;
     } else {
-        printf(" failure\n");
+        logging_log(LOGARGS," failure\n");
         return NULL;
     }
 }
@@ -114,7 +115,7 @@ void addCache(const char * plugin_prefix, const char * fname, json_object * entr
         json_object_object_add(pcache, fname, cache_entry);
         push_cache();
     } else {
-        printf ("addaCache Failed: fname = %s; cache_entry = %s\n",fname,json_object_to_json_string(cache_entry));
+        logging_log(LOGARGS,"addaCache Failed: fname = %s; cache_entry = %s\n",fname,json_object_to_json_string(cache_entry));
     }
     json_object_put(cache_entry);
 }
@@ -191,19 +192,19 @@ void update_config(){
 }
 
 void push_cache(){
-    //printf("pushing cache\n");
+    //logging_log(LOGARGS,"pushing cache\n");
     //json_object_to_file("cache.json",cache);
     const char * string = "";
     if (cache != NULL ) string = json_object_to_json_string(cache);
-    printf("cache.json length = %d\n",(int)strlen(string));
+    logging_log(LOGARGS,"cache.json length = %d\n",(int)strlen(string));
     if (strlen(string) > cacheLength){
-        printf("the string is too long\n");
+        logging_log(LOGARGS,"the string is too long\n");
     }
     semaphore_wait(cache_semaphore);
     memcpy(cacheFile, string, strlen(string));
     msync(cacheFile,strlen(string),MS_SYNC|MS_INVALIDATE);
     semaphore_post(cache_semaphore);
-    printf("cache pushed\n");
+    logging_log(LOGARGS,"cache pushed\n");
 }
 
 void push_config(){

@@ -7,6 +7,7 @@
 
 
 void gdrive_cache_init(utilities u);
+void gdrive_cache_set_args(init_args a);
 json_object * get_metadata(const char *id, const char *path);
 char * get_id(const char * path);
 char * normalize_path(const char * path, bool is_dir);

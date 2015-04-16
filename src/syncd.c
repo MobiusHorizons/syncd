@@ -69,7 +69,7 @@ int get_sync_paths(char *** paths, const char *updated){
 			const char * sync_base = json_object_get_string(json_object_array_get_idx(targets,i));
 			if (strncmp(base,updated,strlen(base))==0){
 				char * path = malloc(strlen(updated)- strlen(base) + strlen(sync_base) + 2);
-				printf("%s%s",sync_base, updated + strlen(base));
+				logging_log(LOGARGS,"%s%s",sync_base, updated + strlen(base));
 				sprintf(path,"%s%s",sync_base, updated + strlen(base));
 				json_object_array_put_idx(r_paths,r_paths_length++,json_object_new_string(path));
 			}
@@ -105,7 +105,7 @@ int cb(const char * path, int mask){
 			moved_from = free_all(moved_from,num_moved_from);
 			num_moved_from = get_sync_paths(&moved_from,path);
 		}
-		printf("file %s changed, mask was %.4x\n",path,mask);
+		logging_log(LOGARGS,"file %s changed, mask was %.4x\n",path,mask);
 		int i;
 		char ** sync_path;
 		int po = get_plugin(path);
@@ -120,7 +120,7 @@ int cb(const char * path, int mask){
 
 		S_OPEN_FILE  sync_open_file = (S_OPEN_FILE)lt_dlsym(plugins[po].ptr,"sync_open");
 		int num_paths = get_sync_paths(&sync_path,path);
-		printf(" errno = %d, and num_paths = %d\n",errno,num_paths);
+		logging_log(LOGARGS," errno = %d, and num_paths = %d\n",errno,num_paths);
 		for( i = 0; i < num_paths ; i++){
 
 			int pd = get_plugin(sync_path[i]);
@@ -129,9 +129,9 @@ int cb(const char * path, int mask){
 			if (dest_cache == NULL) dest_cache = json_object_new_object();
 			long long int orig_ver = json_get_int(orig_cache, "version",0);
 
-			printf("original version = %lld;",orig_ver);
+			logging_log(LOGARGS,"original version = %lld;",orig_ver);
 			if ( json_get_int(dest_cache, "version", -1) >= orig_ver){
-				printf("destination version = %lld\n",json_get_int(dest_cache, "version",-1));
+				logging_log(LOGARGS,"destination version = %lld\n",json_get_int(dest_cache, "version",-1));
 				// this file is already in sync
 				continue;
 			} else {
@@ -140,31 +140,31 @@ int cb(const char * path, int mask){
 				addCache(dest_prefix, sync_path[i] + strlen(dest_prefix),json_object_get(dest_cache));
 			}
 			if ((mask & S_CREATE ) && (mask & S_DIR)){
-				printf("new dir\n");
+				logging_log(LOGARGS,"new dir\n");
 				S_MKDIR sync_mkdir = (S_MKDIR) lt_dlsym(plugins[pd].ptr,"sync_mkdir");
 				sync_mkdir(sync_path[i]);
 			} else {
 				if (mask & (S_CLOSE_WRITE | S_CREATE)){
-					printf("trying to open file\n");
+					logging_log(LOGARGS,"trying to open file\n");
 					FILE * file = sync_open_file(path);
-					printf("file opened, file = %p\n",file);
-					printf("writing file ...\n");
+					logging_log(LOGARGS,"file opened, file = %p\n",file);
+					logging_log(LOGARGS,"writing file ...\n");
 					if (file !=NULL){
 						S_WRITE sync_write = (S_WRITE) lt_dlsym(plugins[pd].ptr,"sync_write");
-						printf("starting write\n");
-						printf("wrote %d bytes\n",sync_write(sync_path[i],file));
+						logging_log(LOGARGS,"starting write\n");
+						logging_log(LOGARGS,"wrote %d bytes\n",sync_write(sync_path[i],file));
 						fclose(file);
 					}
 				} else {
 					if (mask & S_DELETE){
 						S_RM sync_rm = (S_RM) lt_dlsym(plugins[pd].ptr,"sync_rm");
-						printf("deleted file %s, returned %d\n",sync_path[i],sync_rm(sync_path[i]));
+						logging_log(LOGARGS,"deleted file %s, returned %d\n",sync_path[i],sync_rm(sync_path[i]));
 					}
 				}
 			}
 			if (mask & S_MOVED_TO){
 				S_MV sync_mv = (S_MV) lt_dlsym(plugins[pd].ptr,"sync_mv");
-				printf("moved file %s to %s, returned %d\n",moved_from[i],sync_path[i],sync_mv(moved_from[i],sync_path[i]));
+				logging_log(LOGARGS,"moved file %s to %s, returned %d\n",moved_from[i],sync_path[i],sync_mv(moved_from[i],sync_path[i]));
 			}
 		}
 		if (mask & S_MOVED_TO) moved_from = free_all(moved_from,num_moved_from);
@@ -179,19 +179,22 @@ lt_dlhandle loadPlugin(const char * filename ){
 	lt_dlhandle out = lt_dlopen(filename);
 	const char * (*get_prefix)() = (const char * (*)()) lt_dlsym (out, "get_prefix");
 	if ( get_prefix != NULL){
+		const char * prefix = get_prefix();
 		json_object_object_foreach(rules,base,targets){
 			int i;
-			const char * prefix = get_prefix();
 			if (strncmp(base, prefix, strlen(prefix)) == 0) {
 				return out;
 			}
 			for(i = 0; i < json_object_array_length(targets); i++){
 				json_object * t = json_object_array_get_idx(targets, i);
 				if (strncmp(json_object_get_string(t),prefix,strlen(prefix)) == 0){
+					printf("Loading %.*s from %s\n", strlen(prefix)-3,prefix, filename);
+					logging_log(LOGARGS,"Loading %.*s plugin from %s\n", strlen(prefix)-3,prefix, filename);
 					return out;
 				}
 			}
 		}
+		logging_log(LOGARGS, "Not loading %.*s plugin from '%s' because it is not referenced in any rule\n", strlen(prefix)-3, prefix, filename);
 	}
 	return NULL;
 }
@@ -202,10 +205,11 @@ int loadPlugins(Plugin **return_plugins){
 	init_args args;
 	args.utils = get_utility_functions();
 	args.event_callback = cb;
+	args.log = logging_log;
 	int num_plugins = 0, i=0;
 	DIR * dp;
 	struct dirent *ep;
-  printf("looking for plugins in %s\n", LIBDIR );
+  logging_log(LOGARGS,"looking for plugins in %s\n", LIBDIR );
 	dp = opendir(LIBDIR ); //TODO this should pull from config.h
 	char configPath[PATH_MAX];
 	strcpy(configPath, getenv("HOME"));
@@ -223,11 +227,9 @@ int loadPlugins(Plugin **return_plugins){
 					plugins = (Plugin *) realloc(plugins,(num_plugins+1) * sizeof(Plugin) );
 					S_INIT init = (S_INIT) lt_dlsym(p.ptr,"init");
 					p.prefix = init(args);
-					printf ("prefix for plugin %d is '%s'\n",num_plugins,p.prefix);
+					logging_log(LOGARGS,"prefix for plugin %d is '%s'\n",num_plugins,p.prefix);
 					plugins[num_plugins] = p;
 					num_plugins ++ ;
-				} else {
-					printf ("%s is not a valid plugin\n",filename);
 				}
 				free(filename);
 #if defined(UNIX)
@@ -254,7 +256,7 @@ void unloadPlugins(Plugin *plugins, int num){
 
 void add_watch(char* path){
 	int p = get_plugin(path);
-	printf("plugin for '%s' is %d\n",path,p);
+	logging_log(LOGARGS,"plugin for '%s' is %d\n",path,p);
 	if (p != -1){
 		S_WATCH_DIR watch_dir = (S_WATCH_DIR) lt_dlsym(plugins[p].ptr,"watch_dir");
 		watch_dir(path);
@@ -291,16 +293,16 @@ int main(int argc, char** argv){
 	{
 		int opt;
 		while (( opt = getopt(argc,argv,"p:")) != -1){
-			printf("%c\n", opt);
+			logging_log(LOGARGS,"%c\n", opt);
 			if (opt == 'p'){
 				plugin_to_run = atoi(optarg);
 			}
 		}
 	}
-	printf ("plugin_to_run = %d\n",plugin_to_run);
-    char path[PATH_MAX];
+  char path[PATH_MAX];
 	// init shared memory
 	setupConfig();
+	logging_log(LOGARGS,"plugin_to_run = %d\n",plugin_to_run);
 	cache_init();
 	num_plugins = loadPlugins(&plugins);
 	printf("got plugins\n");
@@ -309,7 +311,7 @@ int main(int argc, char** argv){
 		S_LISTEN listen =(S_LISTEN) lt_dlsym(plugins[plugin_to_run].ptr,"sync_listen");
 		json_object_object_foreach(rules,dir,val){
 			if (get_plugin(dir) == plugin_to_run){// get rules specific to this plugin
-				printf("dir=%s\n",dir);
+				logging_log(LOGARGS,"dir=%s\n",dir);
 				add_watch(dir);
 			}
 		}
@@ -320,7 +322,7 @@ int main(int argc, char** argv){
 		if (pid == 0){ // child
 			json_object_object_foreach(rules,dir,val){
 				if (get_plugin(dir) == i){ // get rules specific to this plugin
-					printf("dir=%s\n",dir);
+					logging_log(LOGARGS,"dir=%s\n",dir);
 					add_watch(dir);
 				}
 			}

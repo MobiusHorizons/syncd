@@ -11,10 +11,15 @@
 #define PLUGIN_PREFIX_LEN 9
 
 utilities utils;
+init_args args;
 bool check_error(json_object *);
 
 void gdrive_cache_init(utilities u){
     utils = u;
+}
+
+void gdrive_cache_set_args(init_args a){
+  args = a;
 }
 
 char * safe_strdup(const char * value){
@@ -59,7 +64,7 @@ json_object * get_metadata(const char* id, const char* path){
         return NULL;// this means it was deleted
     }
 
-    
+
 	json_add_string(file, "path", path);
 
 	utils.addCache(PLUGIN_PREFIX, path, json_object_get(file));
@@ -88,7 +93,7 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
                 return file;
             }
         }
-	} 
+	}
 
 	json_object * file = json_object_new_object();
 	bool is_dir =  strcmp(
@@ -161,7 +166,7 @@ char * get_path(const char * id){
     // #DEBUG
     //printf("file: \n%s\n", json_object_to_json_string_ext(file, JSON_C_TO_STRING_PRETTY));
     if (json_get_bool(file, "deleted", false)) return NULL;
-    if (!json_object_object_get_ex(file, "path", NULL)){ 
+    if (!json_object_object_get_ex(file, "path", NULL)){
         if (json_get_bool(file, "is_root", false)) return strdup("/");
         char * parent_id = safe_strdup(json_get_string(file, "parentID"));
         char * title = safe_strdup(json_get_string(file, "title"));
@@ -170,14 +175,14 @@ char * get_path(const char * id){
         char * path = get_path(parent_id);
 
         free(parent_id);
-        
+
         if (path == NULL) return NULL; // deleted
 
         path = (char*) realloc (path, strlen(path) + strlen(title) + 1 + is_dir);
         strcat(path, title);
         if (is_dir) strcat(path, "/");
         free(title);
-        
+
         // cache this data.
         get_metadata(id, path);
         if (free_metadata) json_object_put(file);

@@ -45,6 +45,7 @@
 char * client_key    = "gmq6fs74fuw1ead";
 char * client_secret = "ia87pt0ep6dvb7y";
 char * access_token;
+init_args args;
 utilities utils;
 json_object * config;
 json_object * cache;
@@ -89,7 +90,7 @@ void update_cache(json_object * entry,const char *fname){
     json_object_object_add(entry, "rev", json_object_new_string("deleted"));
     json_object_object_add(entry, "size", json_object_new_int64(0));
   }
-  printf("update_cache : %s\n",json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
+  args.log(LOGARGS,"update_cache : %s\n",json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
   struct tm mod = {0};
   time_t modified;
   const char * modified_s = JSON_GET_STRING(entry,"modified");
@@ -101,10 +102,10 @@ void update_cache(json_object * entry,const char *fname){
   modified = mktime(&mod); // convert struct tm to time_t (ie seconds since epoch).
   json_object * size;
   if (!json_object_object_get_ex(entry, "bytes", &size)){
-    printf("entry has no size object\n");
+    args.log(LOGARGS,"entry has no size object\n");
   }
   size = json_object_new_int64(json_object_get_int64(size)); // copy
-  printf("size : %ld\n",json_object_get_int64(size));
+  args.log(LOGARGS,"size : %ld\n",json_object_get_int64(size));
 
   //    json_copy(&cfile, "rev", entry, json_object_new_string("blank"));
   {
@@ -117,7 +118,7 @@ void update_cache(json_object * entry,const char *fname){
   json_object_object_add(cfile, "version", json_object_new_int64(old_ver));
   json_object_object_add(cfile, "modified", json_object_new_int64((long long)modified));
   json_object_object_add(cfile, "size", size);
-  printf("'%s' modified :%ld, size: %ld bytes\n", fname, modified, json_object_get_int64(size));
+  args.log(LOGARGS,"'%s' modified :%ld, size: %ld bytes\n", fname, modified, json_object_get_int64(size));
 
   utils.addCache(PLUGIN_PREFIX, fname, cfile);
 }
@@ -126,7 +127,8 @@ const char * get_prefix(){
   return PLUGIN_PREFIX;
 }
 
-char * init(init_args args){
+char * init(init_args a){
+  args = a;
   utils = args.utils;
   curl_global_init(CURL_GLOBAL_DEFAULT);
   config = utils.getConfig(PLUGIN_PREFIX);
@@ -140,7 +142,7 @@ char * init(init_args args){
     char cmd[512];
     sprintf(cmd, "%s \"%s?response_type=code&client_id=%s\"",URL_OPEN_CMD,OAUTH_2_AUTH,client_key);
     //printf("go to https://www.dropbox.com/1/oauth2/authorize?response_type=code&client_id=%s and copy the code here\n",client_key);
-    printf("Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
+    args.log(LOGARGS,"Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
     system(cmd);
     if (fgets(token,128,stdin) == NULL) exit(1);
     int len = strlen(token);
@@ -148,7 +150,7 @@ char * init(init_args args){
     access_token = safe_strdup(db_authorize_token(token,client_key,client_secret));
     if (access_token == NULL) exit(1);
     json_object * at = json_object_new_string(access_token);
-    printf("config = %s\n",json_object_to_json_string(config));
+    args.log(LOGARGS,"config = %s\n",json_object_to_json_string(config));
     json_object_object_add(config, "access_token", at);
     utils.addConfig(PLUGIN_PREFIX, config);
   }
@@ -171,7 +173,7 @@ void sync_listen(int (*cb)(const char*,int)){
       cursor = strdup(json_object_get_string(jcursor));
     }
   }
-  printf("cursor=%s\n",cursor);
+  args.log(LOGARGS,"cursor=%s\n",cursor);
   bool has_more;
   int i;
   while (true){
@@ -186,7 +188,7 @@ void sync_listen(int (*cb)(const char*,int)){
           //free (cursor);
           new_cursor = strdup(c);
         } else {
-          printf("delta = %s\n",json_object_to_json_string(delta));
+          args.log(LOGARGS,"delta = %s\n",json_object_to_json_string(delta));
 
           free(cursor);
           cursor = NULL;
@@ -196,7 +198,7 @@ void sync_listen(int (*cb)(const char*,int)){
       json_object* entry;
       json_object *entries;
       if (!json_object_object_get_ex(delta,"entries",&entries)){
-        printf("no delta['entries']\n");
+        args.log(LOGARGS,"no delta['entries']\n");
         free(cursor);
         cursor=NULL;
         continue;
@@ -206,7 +208,7 @@ void sync_listen(int (*cb)(const char*,int)){
         entry = json_object_array_get_idx(entries,i);
         char lowercasePath[PATH_MAX];
         strcpy(lowercasePath,json_object_get_string(json_object_array_get_idx(entry,0)));
-        printf("%s\n",json_object_to_json_string(entry));
+        args.log(LOGARGS,"%s\n",json_object_to_json_string(entry));
         //printf("path = %s\n",path);
 
         if (! json_object_is_type(json_object_array_get_idx(entry,1), json_type_null)){
@@ -215,7 +217,7 @@ void sync_listen(int (*cb)(const char*,int)){
           json_object* path_map = json_object_new_object();
           json_object_object_add(path_map, "path", json_object_new_string(path));
           utils.addCache(PLUGIN_PREFIX,lowercasePath,path_map);
-          printf("adding cache entry for pathmap %s => %s \n", lowercasePath, path);
+          args.log(LOGARGS,"adding cache entry for pathmap %s => %s \n", lowercasePath, path);
           update_cache(entry, path + PLUGIN_PREFIX_LEN);
 
           if (JSON_GET_BOOL(entry,"is_dir",false))
@@ -237,12 +239,12 @@ void sync_listen(int (*cb)(const char*,int)){
 
       has_more = JSON_GET_BOOL(delta,"has_more",false);
 
-      printf("========================================================\n\n");
-      printf("Old Cursor : %s\n",cursor);
+      args.log(LOGARGS,"========================================================\n\n");
+      args.log(LOGARGS,"Old Cursor : %s\n",cursor);
       free(cursor);
       cursor = new_cursor;
-      printf("New Cursor : %s\n\n",new_cursor);
-      printf("========================================================\n\n");
+      args.log(LOGARGS,"New Cursor : %s\n\n",new_cursor);
+      args.log(LOGARGS,"========================================================\n\n");
 
       config = utils.getConfig(PLUGIN_PREFIX);
       json_object_object_add(config, "cursor", json_object_new_string(cursor));
@@ -254,9 +256,9 @@ void sync_listen(int (*cb)(const char*,int)){
     do {// wait for updates
       if (cursor == NULL) break;
       json_object * resp;
-      printf("waiting for changes, 120 sec\n");
+      args.log(LOGARGS,"waiting for changes, 120 sec\n");
       resp = db_longpoll(cursor,120);
-      printf("%s\n",json_object_to_json_string(resp));
+      args.log(LOGARGS,"%s\n",json_object_to_json_string(resp));
       changes = JSON_GET_BOOL(resp,"changes",false);
       json_object_put(resp);
       CLEAN_BREAK
@@ -265,14 +267,14 @@ void sync_listen(int (*cb)(const char*,int)){
 }
 
 void do_poll(int interval){
-  printf("sleeping %ld seconds\n",interval-(time(NULL)%interval));
+  args.log(LOGARGS,"sleeping %ld seconds\n",interval-(time(NULL)%interval));
   sleep (interval - (time(NULL)%interval));
   //	update();
 }
 
 
 void watch_dir(char*path){
-  printf("i am supposed to be monitoring directory %s\n",path);
+  args.log(LOGARGS,"i am supposed to be monitoring directory %s\n",path);
 }
 
 FILE * sync_open(const char*ipath){
@@ -291,7 +293,7 @@ int sync_read (int id, char * buffer, int len){ // deprecated
 }
 
 int sync_write(char * path, FILE * fp){
-  printf("path = '%s', file = %p\n",path,fp);
+  args.log(LOGARGS,"path = '%s', file = %p\n",path,fp);
   path += PLUGIN_PREFIX_LEN;
   json_object * metadata = db_files_put(path,access_token,fp);
   update_cache(metadata,path);
