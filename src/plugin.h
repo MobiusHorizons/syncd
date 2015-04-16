@@ -24,6 +24,7 @@
 
 #include "json_helper.h"
 #include "cache.h"
+#include "log.h"
 #include <stdio.h>
 #include <ltdl.h>
 #include <signal.h>
@@ -42,6 +43,7 @@
 typedef struct {
   utilities utils;
   int(*event_callback)(const char*,int);
+  LOGGING_LOG log;
   //JSON json;
 } init_args;
 
