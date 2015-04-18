@@ -41,7 +41,7 @@ char * safe_strdup(const char * in){
 }
 
 json_object * gdrive_get_metadata(const char * file_id){
-    printf("GDRIVE_GET_META: had to get medatada for id '%s'\n", file_id);
+  //printf("GDRIVE_GET_META: had to get medatada for id '%s'\n", file_id);
     char * params[2];
 	char * url = (char*) malloc(strlen("https://www.googleapis.com/drive/v2/files/") + strlen(file_id) + 1);
 	sprintf(url, "https://www.googleapis.com/drive/v2/files/%s",file_id);
@@ -89,7 +89,7 @@ FILE * gdrive_get (const char * file_id){
     strcat(download_url, "&access_token=");
     strcat(download_url, KEY);
 
-    printf("download url = %s\n",download_url);
+    //printf("download url = %s\n",download_url);
     FILE * ret = rest_get(NULL,download_url);
     free(download_url);
     json_object_put(metadata);
@@ -116,18 +116,18 @@ json_object * gdrive_get_changes(const char* pageToken,const char*startChangeId,
 	params[i] = NULL;
 	i = 0;
 	while ( params[i] != NULL){
-		printf("%s&",params[i++]);
+	//	printf("%s&",params[i++]);
 	}
-	printf("\n");
+//	printf("\n");
 	buffer resp = rest_get_buffer(params,"https://www.googleapis.com/drive/v2/changes");
-     
+
 	i = 0;
 	while (params[i] != NULL) free(params[i++]);
-	
+
     if (resp.data == NULL) return NULL;
     json_object * response = json_tokener_parse(resp.data);
     buffer_free(resp);
-    printf("returning response\n");
+  //  printf("returning response\n");
     return response;
 }
 
@@ -139,7 +139,7 @@ json_object * gdrive_upload(char * url,FILE * file){
 	rest_build_header(&headers[0],"Authorization", bearer);
 	free(bearer);
 	headers[1] = NULL;
-    
+
 	buffer resp = rest_put_headers(NULL,headers,url,file);
 //	printf("resp = %s\n",resp.data);
     if (resp.size > 0 && resp.data != NULL){
@@ -154,14 +154,14 @@ char * get_folder_id(const char * dir, const char * parent_id){
 	const char * format = "title = '%s' and "
 		"mimeType = 'application/vnd.google-apps.folder' and "
 		"'%s' in parents";
-	printf (format,	dir,parent_id); printf("\n");
+//	printf (format,	dir,parent_id); printf("\n");
 	char * q = (char*) malloc(strlen(format)+strlen(dir)+strlen(parent_id));
 	sprintf(q,format,dir,parent_id);
 	json_object * response = gdrive_files_list(q,0);
 	json_object * items;
 	json_object_object_get_ex(response,"items",&items);
 	const char * temp_id = JSON_GET_STRING(json_object_array_get_idx(items,0),"id");
-	printf("id = '%s'\n",temp_id);
+//	printf("id = '%s'\n",temp_id);
 	char * id = NULL;
 	if (temp_id != NULL) id = strdup(temp_id);
 	json_object_put(response);
@@ -186,7 +186,7 @@ json_object * gdrive_files_put(const char * path, FILE * file){
 		p++;
 		char * dir = strdup("root");
 		do {
-			printf("'%s'\n",dir);
+		//	printf("'%s'\n",dir);
 			// find next slash
 			char * delim = p + strcspn(p,"/");
 			while(delim[-1] == '\\'){
@@ -205,7 +205,7 @@ json_object * gdrive_files_put(const char * path, FILE * file){
 			dir = temp_dir;
 			p = delim+1;
 		} while (p < end);
-		printf("id = '%s'\n",dir);
+	//	printf("id = '%s'\n",dir);
 		parent_id = json_object_new_string(dir==NULL?"root":dir);
 		fname = p;
 	}
@@ -252,7 +252,7 @@ json_object * gdrive_files_put(const char * path, FILE * file){
 
 	int resp = rest_post_all(args);
 	char * upload_url = return_headers[1] + strlen("Location: ");
-    printf("url = '%s'\n",upload_url);
+  //  printf("url = '%s'\n",upload_url);
     {
         char * end = upload_url + strlen(upload_url) -1;
         while(end > upload_url && isspace(*end)) end--;
@@ -351,7 +351,7 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
     } else {
         curlResponse = rest_put_all(args, NULL);
     }
-    printf("curlResponse = %d\n", curlResponse);
+  //  printf("curlResponse = %d\n", curlResponse);
 
     if (curlResponse == CURLE_OK){
         i=0;
@@ -362,14 +362,14 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
                 char * end = upload_url + strlen(upload_url) -1;
                 while(end > upload_url && isspace(*end)) end--;
                 *(end+1) = 0;
-                printf("url = '%s'\n",upload_url);
+              //  printf("url = '%s'\n",upload_url);
             }
             puts(return_headers[i++]);
         }
         response = gdrive_upload(upload_url,file);
     } else {
-       printf("url: '%s'", args.url);
-       printf("encountered an error\n%s\n",resp.data);
+      //printf("url: '%s'", args.url);
+      //printf("encountered an error\n%s\n",resp.data);
        response = json_tokener_parse(resp.data);
     }
 	buffer_free(data);
@@ -407,7 +407,7 @@ json_object * gdrive_files_list(char * query, int pageToken){
 		int is_dir = strcmp(JSON_GET_STRING(json_object_array_get_idx(list,i),"mimeType"),
 					"application/vnd.google-apps.folder") == 0;
 
-		printf("\"%s%s\" %*s => %s\n"
+	//printf("\"%s%s\" %*s => %s\n"
 			,title
 			,is_dir?"/":""
 			,(int)30 - strlen(title)
@@ -461,7 +461,7 @@ json_object * gdrive_files_list_children(char * id, int pageToken){
 		const char * folder_id = JSON_GET_STRING(json_object_array_get_idx(list,i),"id");
 		if (folder_id != NULL){
 			json_object * metadata = gdrive_get_metadata(folder_id);
-			printf ("%s%s => %s\n",
+		/*printf ("%s%s => %s\n",
 				JSON_GET_STRING(metadata,"title"),
 				(strcmp
 					(JSON_GET_STRING(metadata,"mimeType"),
@@ -469,6 +469,7 @@ json_object * gdrive_files_list_children(char * id, int pageToken){
 				)?"/":"",
 				folder_id
 			);
+		*/
 //			json_object_put(metadata);
 		}
 	}
@@ -491,7 +492,7 @@ json_object * gdrive_authorize_token (char * token,const char * cid,const char *
 	params[4] = "grant_type=authorization_code";
 	params[5] = NULL;
 
-	printf("doing post\n");
+//printf("doing post\n");
 	buffer resp = rest_post(params,"https://accounts.google.com/o/oauth2/token");
 	json_object * response = NULL;
 	if (resp.data != NULL) response = json_tokener_parse(resp.data);
@@ -513,7 +514,7 @@ char * gdrive_refresh_token (char * refresh_token){
 	params[3] = "grant_type=refresh_token";
 	params[4] = NULL;
 
-	printf("doing post\n");
+//printf("doing post\n");
 	buffer resp = rest_post(params,"https://accounts.google.com/o/oauth2/token");
 	json_object * response = json_tokener_parse(resp.data);
 
@@ -545,79 +546,3 @@ void gdrive_cleanup(){
 	free(KEY);
 	curl_global_cleanup();
 }
-
-
-/*int main(int argc, char ** argv){
-	cache = json_object_from_file("./cache.json");
-	if (cache == NULL) cache = json_object_new_object();
-//	printf("%s\n",json_object_to_json_string_ext(cache,JSON_C_TO_STRING_PRETTY));
-	curl_global_init(CURL_GLOBAL_DEFAULT);
-	KEY = gdrive_refresh_token(REFRESH_TOKEN);
-//	gdrive_files_list("anything at all",0); */
-	/*FILE * test = gdrive_get("0BzrbZp6jFZojMmctZXQwUFNOYlE");
-	FILE * fout = fopen("test.zip","wb");
-	char buffer[4048];
-	int out=0, in,t;
-	do {
-		in = fread(buffer,1,4048,test);
-		t+= in;
-		printf("\rread %d bytes",t);fflush(stdout);
-		out += fwrite(buffer,1,in,fout);
-	} while (in > 0);
-	printf("\n");
-	fclose(test);
-	fclose(fout);
-	printf("wrote %d bytes to \"test.zip\"\n",out);*/
-
-/*	FILE * test = fopen(argv[1],"r");
-	printf("sending file '%s'\n",argv[1]);
-	gdrive_files_put(argv[2],test);
-	fclose(test);
-
-	json_object_put(gdrive_files_list("title='test' and mimeType = 'application/vnd.google-apps.folder'",0));*/
-/*	char * next_page_token = NULL;
-	do {
-		json_object * changes = gdrive_get_changes(next_page_token,100);
-		free(next_page_token);
-		next_page_token = JSON_GET_STRING(changes,"nextPageToken");
-		if (next_page_token != NULL) next_page_token = strdup(next_page_token);
-		int i;
-		json_object * items;
-		if (json_object_object_get_ex(changes, "items",&items)){
-			for ( i = 0; i < json_object_array_length(items);i++){
-				json_object * change = json_object_array_get_idx(items,i);
-				const char * id    = JSON_GET_STRING(change,"fileId");
-				if (
-					!JSON_GET_BOOL(change,"deleted",false) &&
-					json_object_object_get_ex(change,"file",&change)
-				){
-					const char * title = JSON_GET_STRING(change,"title");
-					const char * modified = JSON_GET_STRING(change,"modifiedDate");
-					bool is_create = strcmp(
-						JSON_GET_STRING(change,"createdDate"),
-						modified
-					) == 0;
-					bool is_dir =  strcmp(
-						JSON_GET_STRING(change,"mimeType"),
-						"application/vnd.google-apps.folder"
-					) == 0;
-					printf("file id: '%s', title: '%s%s' %s on %s\n",
-						id,
-						title,
-						is_dir?"/":"",
-						is_create?"created":"modified",
-						modified
-					);
-				} else {
-					printf("file id: '%s, deleted\n",id);
-				}
-			}
-		}
-		json_object_put(changes);
-	} while (next_page_token != NULL);
-	curl_global_cleanup();
-	free(KEY);
-//	printf("%s\n",json_object_to_json_string_ext(cache,JSON_C_TO_STRING_PRETTY));
-	json_object_to_file("./cache.json",cache);
-	json_object_put(cache);
-}*/

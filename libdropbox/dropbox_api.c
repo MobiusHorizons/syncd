@@ -40,7 +40,7 @@ FILE * db_files_get(char* path, const char* access_token){
 	free(url);
 	free(params[0]);
 	return file;
-} 
+}
 
 json_object * db_files_put(char* path, const char* access_token, FILE * input_file){
 	char* params[2];
@@ -132,7 +132,7 @@ const char * db_authorize_token (char* token, char * client_id, char* client_sec
 
 	buffer resp = rest_post(params,OAUTH_2_TOKEN);
 	json_object * response = json_tokener_parse(resp.data);
-	
+
 	buffer_free(resp);
 	free(params[0]);
 	free(params[1]);
@@ -142,7 +142,7 @@ const char * db_authorize_token (char* token, char * client_id, char* client_sec
 	if (json_object_object_get_ex(response,"access_token",&access_token)){
 		return json_object_get_string(access_token);
 	}
-	printf("%s\n",json_object_to_json_string(response));
+	//printf("%s\n",json_object_to_json_string(response));
 	return NULL;
 }
 
@@ -195,4 +195,3 @@ json_object * db_rm(char* name, const char * access_token){
 	free(params[2]);
 	return response;
 }
-
