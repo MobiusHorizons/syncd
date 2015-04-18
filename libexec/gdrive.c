@@ -36,7 +36,16 @@
 #define __GLOBAL_CLIENT_ID      "969830472849-93kt0dqjevn8jgr3g6erissiocdhk2fo.apps.googleusercontent.com"
 #define REFRESH_TOKEN "1/8obRmFxvhhebWSCYckmw_AfUlfTD-ERnwvoro8tMAKI"
 
-
+#if defined(_WIN32)
+#define URL_OPEN_CMD "start \"\""
+#define SILENT_CMD ""
+#elif defined(__APPLE__) && defined(__MACH__)
+#define URL_OPEN_CMD "open"
+#define SILENT_CMD "2&>/dev/null"
+#else
+#define URL_OPEN_CMD "xdg-open"
+#define SILENT_CMD "2&>/dev/null"
+#endif
 
 bool check_error(json_object* obj);
 char * mkdirP(const char * path);
@@ -225,20 +234,26 @@ char * login(){
 	}
 	char token[128];
 	char cmd[512];
-	#ifdef WIN32
-	#define URL_OPEN_CMD "start \"\""
-	#else
-	#define URL_OPEN_CMD "xdg-open"
-	#endif
-	sprintf(cmd , "%s \"%s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code\"",
+	sprintf(cmd , "%s \"%s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code\" %s",
 	URL_OPEN_CMD,
 	"https://accounts.google.com/o/oauth2/auth",
 	__GLOBAL_CLIENT_ID,
 	"urn:ietf:wg:oauth:2.0:oob",
-	"https://www.googleapis.com/auth/drive"
+	"https://www.googleapis.com/auth/drive",
+  SILENT_CMD
 	);
-	system(cmd);
-	printf("paste code here\n");
+	if(system(cmd)){
+    // We don't have a browser.
+    args.log(LOGARGS,"No browser, so we will put the url in the command line.\n");
+    printf("oops, you don't seem to have a browser.\n");
+    prindf("Please go to %s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code and log in.",
+  	"https://accounts.google.com/o/oauth2/auth",
+  	__GLOBAL_CLIENT_ID,
+  	"urn:ietf:wg:oauth:2.0:oob",
+  	"https://www.googleapis.com/auth/drive"
+  	);
+  }
+	printf("Paste code here\n");
 	if (fgets(token,128,stdin) == NULL) exit(1);
 	int len = strlen(token);
 	if (token[len-1] == '\n') token[len-1] = '\0';

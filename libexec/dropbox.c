@@ -35,10 +35,13 @@
 
 #if defined(_WIN32)
 #define URL_OPEN_CMD "start \"\""
+#define SILENT_CMD ""
 #elif defined(__APPLE__) && defined(__MACH__)
 #define URL_OPEN_CMD "open"
+#define SILENT_CMD "2&>/dev/null"
 #else
 #define URL_OPEN_CMD "xdg-open"
+#define SILENT_CMD "2&>/dev/null"
 #endif
 
 /* globals */
@@ -140,10 +143,15 @@ char * init(init_args a){
   if (access_token == NULL){
     char  token[128];
     char cmd[512];
-    sprintf(cmd, "%s \"%s?response_type=code&client_id=%s\"",URL_OPEN_CMD,OAUTH_2_AUTH,client_key);
+    sprintf(cmd, "%s \"%s?response_type=code&client_id=%s\" %s",URL_OPEN_CMD,OAUTH_2_AUTH,client_key, SILENT_CMD);
     //printf("go to https://www.dropbox.com/1/oauth2/authorize?response_type=code&client_id=%s and copy the code here\n",client_key);
-    args.log(LOGARGS,"Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
-    system(cmd);
+    printf("Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
+    if(system(cmd)){
+      // We don't have a browser.
+      args.log(LOGARGS,"No browser, so we will put the url in the command line.\n");
+      printf("oops, you don't seem to have a browser.\n");
+      printf("Please go to %s?response_type=code&client_id=%s and log in.", OAUTH_2_AUTH, client_key);
+    }
     if (fgets(token,128,stdin) == NULL) exit(1);
     int len = strlen(token);
     if (token[len-1] == '\n') token[len-1] = '\0';
