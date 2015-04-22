@@ -65,7 +65,7 @@ This is a json formatted file specifying where to copy files to/from.</p>
 
 <pre><code>{ 
     "plugin:///src/folder/" : [ "plugin:///dest/1/", "plugin:///dest/2/"],
-    "dropbox:///Documents/" : [ "fs:///home/user/Documents/"]
+    "dropbox:///Documents/" : [ "file:///home/user/Documents/"]
 }
 </code></pre>
 
@@ -75,10 +75,23 @@ This is a json formatted file specifying where to copy files to/from.</p>
 <li>
 <code>dropbox://</code> for dropbox</li>
 <li>
-<code>fs://</code> for the filesystem</li>
+<code>file://</code> for the filesystem</li>
 <li>
 <code>gdrive://</code> for Google Drive</li>
 </ul>
+
+<p>You can also use the python utilities in <a href="https://github.com/yjftsjthsd-g/syncd-rules">syncd-rules</a>.
+These are included in the 
+<a href="https://github.com/MobiusHorizons/syncd/releases/download/v0.9/syncd_0.9_amd64.deb">Ubuntu</a> and 
+<a href="https://github.com/MobiusHorizons/syncd/releases/download/v0.9/syncd-0.9-1.fedora.x86_64.rpm">Fedora</a>
+packages as part of <a href="https://github.com/MobiusHorizons/syncd/releases/tag/v0.9">release v0.9</a></p>
+
+<p>To add a rule run:</p>
+
+<pre><code>syncd-add "file:///home/user/Documents/" "dropbox:///Documents"
+</code></pre>
+
+<p>this will add full synchronization both to and from your filesystem and dropbox.</p>
       </section>
     </div>
 
