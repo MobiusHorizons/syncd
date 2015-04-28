@@ -29,10 +29,22 @@ The format of this file is as follows:
 
     { 
         "plugin:///src/folder/" : [ "plugin:///dest/1/", "plugin:///dest/2/"],
-        "dropbox:///Documents/" : [ "fs:///home/user/Documents/"]
+        "dropbox:///Documents/" : [ "file:///home/user/Documents/"]
     }
 
 The current plugin prifixes are 
 - `dropbox://` for dropbox
-- `fs://` for the filesystem
+- `file://` for the filesystem
 - `gdrive://` for Google Drive
+
+You can also use the python utilities in [syncd-rules](https://github.com/yjftsjthsd-g/syncd-rules).
+These are included in the 
+[Ubuntu](https://github.com/MobiusHorizons/syncd/releases/download/v0.9/syncd_0.9_amd64.deb) and 
+[Fedora](https://github.com/MobiusHorizons/syncd/releases/download/v0.9/syncd-0.9-1.fedora.x86_64.rpm)
+packages as part of [release v0.9](https://github.com/MobiusHorizons/syncd/releases/tag/v0.9)
+
+To add a rule run:
+
+    syncd-add "file:///home/user/Documents/" "dropbox:///Documents"
+
+this will add full synchronization both to and from your filesystem and dropbox.
