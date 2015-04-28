@@ -31,6 +31,8 @@
 /* Cache management ( syncronization between processes ) */
 void cache_init();
 
+void cache_clear(); 
+
 
 json_object * getCache(const char * plugin_prefix);
 json_object * getFileCache(const char * plugin_prefix, const char * fname);

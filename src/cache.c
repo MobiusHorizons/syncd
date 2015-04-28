@@ -40,6 +40,7 @@ json_object * cache;
 json_object * config;
 
 char * cacheFile;
+int cacheFD;
 long long int * cacheVersion;
 size_t cacheLength;
 semaphore cache_semaphore;
@@ -58,15 +59,22 @@ void cache_init(){
     char path[PATH_MAX];
     strcpy(path, getenv("HOME"));
     strcat(path, "/.cache/syncd/cache.json");
-    int fd = open(path,O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
-    ftruncate(fd,cacheLength);
-    logging_log(LOGARGS,"fd = %d\n",fd);
+    int cacheFD = open(path,O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
+    ftruncate(cacheFD,cacheLength);
+    logging_log(LOGARGS,"fd = %d\n",cacheFD);
     cacheFile = (char *) mmap(NULL, cacheLength,
-            PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, fd, 0);
+            PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, cacheFD, 0);
     if (cacheFile == MAP_FAILED ) errx(1,"failed");
     // setup semaphores.
     cache_semaphore = semaphore_create(1);
     config_semaphore = semaphore_create(1);
+}
+
+void cache_clear(){
+    munmap(cacheFile, cacheLength);
+    close(cacheFD);
+    semaphore_delete(cache_semaphore);
+    semaphore_delete(config_semaphore);
 }
 
 json_object * getCache(const char * plugin_prefix){

@@ -307,7 +307,7 @@ int rest_post_all(rest_args args){
 		curl_easy_setopt(curl,CURLOPT_WRITEDATA, args.return_data);
 		curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,WriteBufferCB);
 	}
-	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+	//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 	CURLcode res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	free(post);
@@ -365,7 +365,7 @@ int rest_put_all(rest_args args, FILE * file){
 		curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,WriteBufferCB);
 	}
 
-	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+	//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 	CURLcode res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	free(content_type);

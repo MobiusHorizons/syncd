@@ -9,7 +9,7 @@ semaphore semaphore_create(unsigned int max){
     return s;
 }
 
-int semaphore_destory(semaphore s){
+int semaphore_delete(semaphore s){
     int ret = sem_destroy(s.semaphore);
     if (ret == 0) shared_mem_dealloc(s.semaphore, sizeof(sem_t));
     return ret;
@@ -22,5 +22,3 @@ int semaphore_wait(semaphore s){
 int semaphore_post(semaphore s){
     return sem_post(s.semaphore);
 }
-
-

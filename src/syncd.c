@@ -72,6 +72,7 @@ int get_sync_paths(char *** paths, const char *updated){
 				logging_log(LOGARGS,"%s%s",sync_base, updated + strlen(base));
 				sprintf(path,"%s%s",sync_base, updated + strlen(base));
 				json_object_array_put_idx(r_paths,r_paths_length++,json_object_new_string(path));
+				free(path);
 			}
 		}
 	}
@@ -295,7 +296,6 @@ int main(int argc, char** argv){
 	{
 		int opt;
 		while (( opt = getopt(argc,argv,"p:")) != -1){
-			logging_log(LOGARGS,"%c\n", opt);
 			if (opt == 'p'){
 				plugin_to_run = atoi(optarg);
 			}
@@ -333,4 +333,5 @@ int main(int argc, char** argv){
 		}
 	}
 	unloadPlugins(plugins,num_plugins);
+	cache_clear();
 }

@@ -39,7 +39,7 @@
 #define SILENT_CMD ""
 #elif defined(__APPLE__) && defined(__MACH__)
 #define URL_OPEN_CMD "open"
-#define SILENT_CMD "2&>/dev/null"
+#define SILENT_CMD ""
 #else
 #define URL_OPEN_CMD "sh -c 'xdg-open"
 #define SILENT_CMD "' 2&>/dev/null"

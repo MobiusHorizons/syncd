@@ -21,6 +21,7 @@
 
 #define  _XOPEN_SOURCE 500
 #include <libgen.h>
+#include <sys/wait.h>
 #include "../libgdrive/gdrive_api.h"
 #include "../src/os.h"
 #include "../src/json_helper.h"
@@ -43,8 +44,8 @@
 #define URL_OPEN_CMD "open"
 #define SILENT_CMD "2&>/dev/null"
 #else
-#define URL_OPEN_CMD "xdg-open"
-#define SILENT_CMD "2&>/dev/null"
+#define URL_OPEN_CMD "sh -c 'xdg-open"
+#define SILENT_CMD "' 2&>/dev/null"
 #endif
 
 bool check_error(json_object* obj);
@@ -157,6 +158,8 @@ unsigned long upload(const char * path, FILE * file){
     if (id != NULL){
         json_add_string(metadata, "id", id);
     }
+    free(id);
+
     json_object * parent_obj = json_object_new_object();
     json_add_string(parent_obj, "id", parentID);
     json_object * parents = json_object_new_array();
@@ -242,11 +245,13 @@ char * login(){
 	"https://www.googleapis.com/auth/drive",
   SILENT_CMD
 	);
-	if(system(cmd)){
+  int cmd_ret = system(cmd);
+  args.log(LOGARGS, "command returned %d\n", WEXITSTATUS(cmd_ret));
+  if(WEXITSTATUS(cmd_ret) != 0){
     // We don't have a browser.
     args.log(LOGARGS,"No browser, so we will put the url in the command line.\n");
     printf("oops, you don't seem to have a browser.\n");
-    prindf("Please go to %s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code and log in.",
+    printf("Please go to %s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code and log in.",
   	"https://accounts.google.com/o/oauth2/auth",
   	__GLOBAL_CLIENT_ID,
   	"urn:ietf:wg:oauth:2.0:oob",
@@ -263,7 +268,7 @@ char * login(){
 		resp = gdrive_authorize_token(token, __GLOBAL_CLIENT_ID, __GLOBAL_CLIENT_SECRET);
 	} while (resp == NULL || ( resp != NULL && json_object_object_get_ex(resp, "error", NULL)));
 
-	puts(json_object_to_json_string_ext(resp,JSON_C_TO_STRING_PRETTY));
+	args.log(LOGARGS, "%s\n",json_object_to_json_string_ext(resp,JSON_C_TO_STRING_PRETTY));
 	char * access_token = strdup(JSON_GET_STRING(resp,"access_token"));
 	json_object_object_add(config,"auth",resp);
 	utils.addConfig(PLUGIN_PREFIX, config);
@@ -288,8 +293,10 @@ void reauth(){
 
 		char * refresh_token = strdup(JSON_GET_STRING(auth,"refresh_token"));
 		if (refresh_token == NULL){
+      free(key);
 			key = login();
 		} else {
+      free(key);
 			key = gdrive_refresh_token(refresh_token);
 			free(refresh_token);
 			json_object_object_add(
@@ -304,7 +311,7 @@ void reauth(){
 	}
 	gdrive_access_token(key);
     free(key);
-    json_object_put(config);
+    //json_object_put(config);
 }
 
 bool check_error(json_object* obj){

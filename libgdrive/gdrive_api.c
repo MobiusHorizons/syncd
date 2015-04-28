@@ -115,9 +115,9 @@ json_object * gdrive_get_changes(const char* pageToken,const char*startChangeId,
     rest_build_param(&params[i++], "includeSubscribed", includeSubscribed?"true":"false");
 	params[i] = NULL;
 	i = 0;
-	while ( params[i] != NULL){
+	//while ( params[i] != NULL){
 	//	printf("%s&",params[i++]);
-	}
+	//}
 //	printf("\n");
 	buffer resp = rest_get_buffer(params,"https://www.googleapis.com/drive/v2/changes");
 
@@ -338,12 +338,13 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
 	args.content_type = strdup("application/json; charset=UTF-8");
 
 	buffer data;
-    buffer resp = buffer_init(0);
-	data.data = strdup(json_object_to_json_string_ext(metadata, JSON_C_TO_STRING_PRETTY));
-	data.size = strlen(data.data);
+  buffer resp = buffer_init(0);
+	const char * metadataChr = json_object_to_json_string_ext(metadata, JSON_C_TO_STRING_PRETTY)
+	data.data = strdup(metadataChr);
+	data.size = strlen(metadataChr);
 
 	args.content = &data;
-    args.return_data = &resp;
+  args.return_data = &resp;
 	args.return_headers = return_headers;
     int curlResponse = 0;
     if (id == NULL){
@@ -351,6 +352,9 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
     } else {
         curlResponse = rest_put_all(args, NULL);
     }
+		free(args.content_type);
+		free(args.url);
+		buffer_free(data);
   //  printf("curlResponse = %d\n", curlResponse);
 
     if (curlResponse == CURLE_OK){
@@ -364,7 +368,8 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
                 *(end+1) = 0;
               //  printf("url = '%s'\n",upload_url);
             }
-            puts(return_headers[i++]);
+						i++;
+            //puts(return_headers[i++]);
         }
         response = gdrive_upload(upload_url,file);
     } else {
@@ -372,8 +377,7 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
       //printf("encountered an error\n%s\n",resp.data);
        response = json_tokener_parse(resp.data);
     }
-	buffer_free(data);
-    buffer_free(resp);
+		buffer_free(resp);
 	i = 0;
 	while (return_headers[i]!= NULL && return_headers[i][0] != '\0'){
 		free(return_headers[i]);

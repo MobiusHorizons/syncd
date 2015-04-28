@@ -69,7 +69,7 @@ int update_file_cache(char * filename, int update){
     int metadata_changed = 0;
     struct stat details;
     args.log(LOGARGS,"filename = %s\n",filename);
-    json_object * cache_entry = utils.getFileCache(PLUGIN_PREFIX,filename);
+    json_object * cache_entry = json_object_get(utils.getFileCache(PLUGIN_PREFIX,filename));
     if (cache_entry == NULL){
         metadata_changed = S_CREATE;
         args.log(LOGARGS,"cache was null for %s\n",filename);
@@ -98,6 +98,7 @@ int update_file_cache(char * filename, int update){
             ver += update;
         } else {
             // version same as cache.
+						json_object_put(cache_entry);
             return 0;
         }
     } else {
@@ -108,8 +109,7 @@ int update_file_cache(char * filename, int update){
     json_object_object_add(cache_entry,"modified", json_object_new_int64((long long int)details.st_mtime));
     json_object_object_add(cache_entry, "version", json_object_new_int64(ver));
     args.log(LOGARGS,"cache for file %s : %s\n",filename, json_object_to_json_string(cache_entry));
-    utils.addCache(PLUGIN_PREFIX,filename,json_object_get(cache_entry));
-    json_object_put(cache_entry);
+    utils.addCache(PLUGIN_PREFIX,filename,cache_entry);
     return metadata_changed;
 }
 
