@@ -184,14 +184,14 @@ lt_dlhandle loadPlugin(const char * filename ){
 		json_object_object_foreach(rules,base,targets){
 			int i;
 			if (strncmp(base, prefix, strlen(prefix)) == 0) {
-				printf("Loading %.*s plugin from %s\n", strlen(prefix)-3,prefix, filename);
+				logging_stdout("Loading %.*s plugin from %s\n", strlen(prefix)-3,prefix, filename);
 				logging_log(LOGARGS,"Loading %.*s plugin from %s\n", strlen(prefix)-3,prefix, filename);
 				return out;
 			}
 			for(i = 0; i < json_object_array_length(targets); i++){
 				json_object * t = json_object_array_get_idx(targets, i);
 				if (strncmp(json_object_get_string(t),prefix,strlen(prefix)) == 0){
-					printf("Loading %.*s plugin from %s\n", strlen(prefix)-3,prefix, filename);
+					logging_stdout("Loading %.*s plugin from %s\n", strlen(prefix)-3,prefix, filename);
 					logging_log(LOGARGS,"Loading %.*s plugin from %s\n", strlen(prefix)-3,prefix, filename);
 					return out;
 				}
@@ -209,6 +209,8 @@ int loadPlugins(Plugin **return_plugins){
 	args.utils = get_utility_functions();
 	args.event_callback = cb;
 	args.log = logging_log;
+	args.stdout = logging_stdout;
+	args.stderr = logging_stderr;
 	int num_plugins = 0, i=0;
 	DIR * dp;
 	struct dirent *ep;
@@ -307,7 +309,7 @@ int main(int argc, char** argv){
 	logging_log(LOGARGS,"plugin_to_run = %d\n",plugin_to_run);
 	cache_init();
 	num_plugins = loadPlugins(&plugins);
-	printf("got plugins\n");
+	logging_stdout("got plugins\n");
 	int i;
 	if (plugin_to_run != -1){
 		S_LISTEN listen =(S_LISTEN) lt_dlsym(plugins[plugin_to_run].ptr,"sync_listen");

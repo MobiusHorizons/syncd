@@ -250,15 +250,15 @@ char * login(){
   if(WEXITSTATUS(cmd_ret) != 0){
     // We don't have a browser.
     args.log(LOGARGS,"No browser, so we will put the url in the command line.\n");
-    printf("oops, you don't seem to have a browser.\n");
-    printf("Please go to %s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code and log in.",
+    args.stdout("oops, you don't seem to have a browser.\n");
+    args.stdout("Please go to %s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code and log in.",
   	"https://accounts.google.com/o/oauth2/auth",
   	__GLOBAL_CLIENT_ID,
   	"urn:ietf:wg:oauth:2.0:oob",
   	"https://www.googleapis.com/auth/drive"
   	);
   }
-	printf("Paste code here\n");
+	args.stdout("Paste code here\n");
 	if (fgets(token,128,stdin) == NULL) exit(1);
 	int len = strlen(token);
 	if (token[len-1] == '\n') token[len-1] = '\0';

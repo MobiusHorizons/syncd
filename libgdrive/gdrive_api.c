@@ -339,7 +339,7 @@ json_object * gdrive_put_file(json_object * metadata, FILE * file){
 
 	buffer data;
   buffer resp = buffer_init(0);
-	const char * metadataChr = json_object_to_json_string_ext(metadata, JSON_C_TO_STRING_PRETTY)
+	const char * metadataChr = json_object_to_json_string_ext(metadata, JSON_C_TO_STRING_PRETTY);
 	data.data = strdup(metadataChr);
 	data.size = strlen(metadataChr);
 

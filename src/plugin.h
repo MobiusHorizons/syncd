@@ -44,6 +44,8 @@ typedef struct {
   utilities utils;
   int(*event_callback)(const char*,int);
   LOGGING_LOG log;
+  LOGGING_STDOUT stdout;
+  LOGGING_STDERR stderr;
   //JSON json;
 } init_args;
 

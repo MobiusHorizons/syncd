@@ -42,7 +42,7 @@
 #define SILENT_CMD ""
 #else
 #define URL_OPEN_CMD "sh -c 'xdg-open"
-#define SILENT_CMD "' 2&>/dev/null"
+#define SILENT_CMD "' >/dev/null 2&>/dev/null"
 #endif
 
 /* globals */
@@ -146,14 +146,14 @@ char * init(init_args a){
     char cmd[512];
     sprintf(cmd, "%s \"%s?response_type=code&client_id=%s\" %s",URL_OPEN_CMD,OAUTH_2_AUTH,client_key, SILENT_CMD);
     //printf("go to https://www.dropbox.com/1/oauth2/authorize?response_type=code&client_id=%s and copy the code here\n",client_key);
-    printf("Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
+    args.stdout("Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
     int cmd_ret = system(cmd);
     args.log(LOGARGS, "command returned %d\n", WEXITSTATUS(cmd_ret));
     if(WEXITSTATUS(cmd_ret) != 0){
       // We don't have a browser.
       args.log(LOGARGS,"No browser, so we will put the url in the command line.\n");
-      printf("oops, you don't seem to have a browser.\n");
-      printf("Please go to %s?response_type=code&client_id=%s and log in.\n", OAUTH_2_AUTH, client_key);
+      args.stdout("oops, you don't seem to have a browser.\n");
+      args.stdout("Please go to %s?response_type=code&client_id=%s and log in.\n", OAUTH_2_AUTH, client_key);
     }
     if (fgets(token,128,stdin) == NULL) exit(1);
     int len = strlen(token);
@@ -220,7 +220,6 @@ void sync_listen(int (*cb)(const char*,int)){
         char lowercasePath[PATH_MAX];
         strcpy(lowercasePath,json_object_get_string(json_object_array_get_idx(entry,0)));
         args.log(LOGARGS,"%s\n",json_object_to_json_string(entry));
-        //printf("path = %s\n",path);
 
         if (! json_object_is_type(json_object_array_get_idx(entry,1), json_type_null)){
           entry = json_object_get(json_object_array_get_idx(entry,1));
@@ -320,7 +319,11 @@ int sync_mkdir(char* path){
 
 int sync_rm(char * path){
   path += PLUGIN_PREFIX_LEN;
-  db_rm(path,access_token);
+  json_object * response = db_rm(path,access_token);
+
+	args.log(LOGARGS, json_object_to_json_string(response));
+	json_object_put(response);
+
   return 0;
 }
 

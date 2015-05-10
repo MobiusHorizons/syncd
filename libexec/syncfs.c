@@ -178,6 +178,7 @@ void watch_dir_recurse(char * dir_name){
 
 void watch_dir (char * dir_name){
     dir_name += PLUGIN_PREFIX_LEN;
+	  sync_mkdir(dir_name);
     watch_dir_recurse(dir_name);
 }
 

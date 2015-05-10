@@ -12,8 +12,12 @@ typedef enum {
 
 void logging_init(const char *filename);
 void logging_log(const char * file, int line, const char *fmt, ...);
+void logging_stdout(const char *fmt, ...);
+void logging_stderr(const char *fmt, ...);
 void logging_close();
 
 typedef void (*LOGGING_LOG)(const char *,int,const char*,...);
+typedef void (*LOGGING_STDOUT)(const char*,...);
+typedef void (*LOGGING_STDERR)(const char*,...);
 
 #endif
