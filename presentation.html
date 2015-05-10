@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>syncd presentation</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# syncd
+## The universal file sync daemon
+Brian Cole, Paul Martin
+
+Mentor: Dr. Nelesen
+
+---
+
+class: middle
+# Impetus
+
+* Storage, storage, everywhere
+* Different interfaces
+ * No centralized control
+* Poor Linux support
+* Limits on locations (ex. only ~/Dropbox)
+
+---
+
+class: middle
+# Goals
+
+* Portable
+* Minimal
+* Extensible
+* Flexible
+
+---
+
+class: middle
+# Architecture
+TODO: picture
+
+* syncd
+* plugins
+* rules
+
+---
+
+class: middle, center
+# Demo
+
+---
+
+# Plugins
+
+* File system
+* Dropbox
+* Google Drive
+
+
+
+    </textarea>
+	 <!-- <script src="remark-latest.min.js"> -->
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
