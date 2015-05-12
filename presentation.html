@@ -14,12 +14,15 @@
         font-weight: normal;
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+	  .font-large {
+		  font-size: 2em;
+	  }
     </style>
   </head>
   <body>
     <textarea id="source">
 
-class: center, middle
+class: center, middle 
 
 # syncd
 ## The universal file sync daemon
@@ -29,16 +32,29 @@ Mentor: Dr. Nelesen
 
 ---
 
-class: middle
+class: middle, font-large
+name: normal
+layout: true
+
+---
+
 # Impetus
 
 * Storage, storage, everywhere
 * Different interfaces
- * No centralized control
+* No centralized control
 * Poor Linux support
 * Limits on locations (ex. only ~/Dropbox)
 
+???
+Notes: 
+
++ We wanted to have the synchronization features of each storage facility available on every pratform, and with every service.
++ Larger implications, 
+	+ We wanted to be able to create a framework for intelligently handling file synchronization that could be extended by open source.
+
 ---
+
 
 class: middle
 # Goals
