@@ -28,7 +28,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include "cache.h"
-#include <config.h>
+//#include <config.h>
 
 #ifndef HAVE_FORK 
     #define fork() pseudo_fork(i,argv[0])
