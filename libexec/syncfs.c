@@ -36,24 +36,25 @@
 #define PLUGIN_PREFIX_LEN 7
 #include <src/plugin.h>
 
-
+#define HAVE_INOTIFY_H
 
 char* init(init_args);
 void add_watch(char *);
 void watch_dir(char *);
 void sync_listen(int(*)(const char*,int));
+int sync_mkdir(char*);
 int update_file_cache(char*,int);
 int(*update_event)(const char*,int);
 init_args args;
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
+//#ifdef HAVE_CONFIG_H
+//# include <config.h>
 #ifdef HAVE_INOTIFY_H
 #   include "linuxfs.c"
 # else
 #   include "uvfs.c"
 # endif
-#endif
+//#endif
 
 
 FILE ** open_files;

@@ -1,4 +1,7 @@
 #include "log.h"
+#include <unistd.h>
+#define _GNU_SOURCE
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdarg.h>
 

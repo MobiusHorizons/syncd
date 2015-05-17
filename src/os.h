@@ -29,7 +29,7 @@
 #include <errno.h>
 #include "cache.h"
 //#include <config.h>
-
+#define HAVE_FORK
 #ifndef HAVE_FORK 
     #define fork() pseudo_fork(i,argv[0])
     int pseudo_fork(int plugin_num,char * exec_name){

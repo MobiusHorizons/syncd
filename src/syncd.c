@@ -28,6 +28,10 @@
 #include <sys/stat.h>
 #include "log.h"
 
+#ifndef LIBDIR
+#define LIBDIR "/usr/local/lib/syncd"
+#endif
+
 typedef struct {
 	lt_dlhandle ptr;
 	const char * prefix;
@@ -176,7 +180,7 @@ int cb(const char * path, int mask){
 
 lt_dlhandle loadPlugin(const char * filename ){
 	const char * ext = rindex(filename, '.');
-	if(strcmp(ext, ".la") != 0) return NULL;
+	if(strcmp(ext, ".so") != 0) return NULL;
 	lt_dlhandle out = lt_dlopen(filename);
 	const char * (*get_prefix)() = (const char * (*)()) lt_dlsym (out, "get_prefix");
 	if ( get_prefix != NULL){

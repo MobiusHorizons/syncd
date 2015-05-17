@@ -35,7 +35,7 @@ bool JSON_GET_BOOL(json_object * obj, const char * object, bool def){
 	return def;
 }
 
-char * safe_strdup(const char * in){
+char * _safe_strdup(const char * in){
   if (in == NULL) return NULL;
   return strdup(in);
 }
@@ -78,7 +78,7 @@ json_object * gdrive_get_metadata(const char * file_id){
 
 FILE * gdrive_get (const char * file_id){
     json_object * metadata = gdrive_get_metadata(file_id);
-	char * download_url = safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
+	char * download_url = _safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
     if (download_url == NULL) return NULL;
     download_url = (char*)realloc(download_url,
         strlen(download_url)
