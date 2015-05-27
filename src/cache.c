@@ -74,15 +74,15 @@ void cache_init(){
             PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, cacheFD, 0);
     if (cacheFile == MAP_FAILED ) errx(1,"failed");
     // setup semaphores.
-    cache_semaphore = semaphore_create(1);
-    config_semaphore = semaphore_create(1);
+    cache_semaphore = semaphore_create(1, "SYNCD\\cache");
+    config_semaphore = semaphore_create(1, "SYNCD\\config");
 }
 
 void cache_clear(){
     munmap(cacheFile, cacheLength);
     close(cacheFD);
-    semaphore_delete(cache_semaphore);
-    semaphore_delete(config_semaphore);
+    semaphore_delete(cache_semaphore, "SYNCD\\cache");
+    semaphore_delete(config_semaphore, "SYNCD\\cache");
 }
 
 json_object * getCache(const char * plugin_prefix){

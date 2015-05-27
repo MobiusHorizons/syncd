@@ -1,7 +1,7 @@
 #ifndef __SYNCD_SEMAPHORE__
 #define __SYNCD_SEMAPHORE__
 
-#ifdef _WINDOWS_
+#ifdef WIN32
 
 	#include <windows.h>
 
@@ -22,8 +22,8 @@
 #endif
 
 // this is for getting shared memory semaphores.
-semaphore 	semaphore_create(unsigned int max);
-int 		semaphore_delete(semaphore 		s);
+semaphore 	semaphore_create(unsigned int max, const char * name);
+int 		semaphore_delete(semaphore 		s, const char * name);
 int 		semaphore_wait	(semaphore 		s);
 int 		semaphore_post	(semaphore 		s);
 
