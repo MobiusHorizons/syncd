@@ -26,14 +26,22 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <err.h>
 #include <unistd.h>
 #include <limits.h>
 #include "ipc_semaphore.h"
 #include "log.h"
+#include <config.h>
 
 #ifndef MAP_FILE
 #define MAP_FILE 0
+#endif
+
+#ifndef HAVE_ERR_H
+void errx(int i,const char * in){
+    return;
+}
+#else
+#include <err.h>
 #endif
 
 json_object * cache;

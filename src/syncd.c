@@ -28,10 +28,6 @@
 #include <sys/stat.h>
 #include "log.h"
 
-#ifndef LIBDIR
-#define LIBDIR "/usr/local/lib/syncd"
-#endif
-
 typedef struct {
 	lt_dlhandle ptr;
 	const char * prefix;
@@ -42,6 +38,40 @@ int num_plugins;
 
 json_object * rules;
 
+#ifndef LIBDIR
+#define LIBDIR "plugins"
+#endif
+
+#ifndef HAVE_FORK 
+#include <windows.h>
+    #define fork() pseudo_fork(i,argv[0])
+    int pseudo_fork(int plugin_num, char * exec_name){
+		char pArg[5];
+		STARTUPINFO si;
+    	PROCESS_INFORMATION pi;
+		
+		memset( &si, 0, sizeof(si) );
+    	si.cb = sizeof(si);
+    	memset( &pi, 0, sizeof(pi) );
+	
+        sprintf(pArg,"-p %d",plugin_num);
+        printf("running '%s %s'\n",exec_name,pArg);
+        //int error = spawnl(P_NOWAIT,exec_name,exec_name,"-p",pnum);
+		bool success = CreateProcess( exec_name,
+	        pArg,        // Command line
+	        NULL,           // Process handle not inheritable
+	        NULL,           // Thread handle not inheritable
+	        FALSE,          // Set handle inheritance to FALSE
+	        0,              // No creation flags
+	        NULL,           // Use parent's environment block
+	        NULL,           // Use parent's starting directory 
+	        &si,            // Pointer to STARTUPINFO structure
+	        &pi 			// Pointer to PROCESS_INFORMATION structure
+		);
+		logging_stdout ("Spawning process with PID %d\n", pi.dwProcessId);
+		return pi.dwProcessId;
+	}
+#endif
 
 json_object * getCacheDetails(int pnum, const char * path) {
 	const char * plugin_prefix = plugins[pnum].prefix;
@@ -179,8 +209,8 @@ int cb(const char * path, int mask){
 	}
 
 lt_dlhandle loadPlugin(const char * filename ){
-	const char * ext = rindex(filename, '.');
-	if(strcmp(ext, ".so") != 0) return NULL;
+	const char * ext = strrchr(filename, '.');
+	if(strcmp(ext, ".la") != 0) return NULL;
 	lt_dlhandle out = lt_dlopen(filename);
 	const char * (*get_prefix)() = (const char * (*)()) lt_dlsym (out, "get_prefix");
 	if ( get_prefix != NULL){
@@ -213,8 +243,8 @@ int loadPlugins(Plugin **return_plugins){
 	args.utils = get_utility_functions();
 	args.event_callback = cb;
 	args.log = logging_log;
-	args.stdout = logging_stdout;
-	args.stderr = logging_stderr;
+	args.printf = logging_stdout;
+	args.error = logging_stderr;
 	int num_plugins = 0, i=0;
 	DIR * dp;
 	struct dirent *ep;
@@ -272,17 +302,25 @@ void add_watch(char* path){
 	}
 }
 
+int c_mkdir (const char * path, int mode){
+#ifdef WIN32
+	return mkdir(path);
+#else
+	return mkdir(path, mode);
+#endif
+}
+
 void setupConfig(){
 	// Create the directories if needed.
 	char path [PATH_MAX];
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/.config/syncd");
-	mkdir(path,0700);
+	c_mkdir(path,0700);
 	strcat(path,"/log.txt");
 	logging_init(path);
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/.cache/syncd");
-	mkdir(path,0700);
+	c_mkdir(path,0700);
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/.config/syncd/rules.json");
 	rules = json_object_from_file(path);

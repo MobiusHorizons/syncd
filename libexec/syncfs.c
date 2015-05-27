@@ -19,43 +19,7 @@
  * THE SOFTWARE.
  */
 
-#define _XOPEN_SOURCE 500
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <ftw.h>
-/* "readdir" etc. are defined here. */
-#include <dirent.h>
-/* limits.h defines "PATH_MAX". */
-#include <limits.h>
-#include <sys/stat.h>
-#define PLUGIN_PREFIX "file://"
-#define PLUGIN_PREFIX_LEN 7
-#include <src/plugin.h>
-
-#define HAVE_INOTIFY_H
-
-char* init(init_args);
-void add_watch(char *);
-void watch_dir(char *);
-void sync_listen(int(*)(const char*,int));
-int sync_mkdir(char*);
-int update_file_cache(char*,int);
-int(*update_event)(const char*,int);
-init_args args;
-
-//#ifdef HAVE_CONFIG_H
-//# include <config.h>
-#ifdef HAVE_INOTIFY_H
-#   include "linuxfs.c"
-# else
-#   include "uvfs.c"
-# endif
-//#endif
-
+#include "syncfs.h"
 
 FILE ** open_files;
 int num_open_files;
@@ -226,7 +190,13 @@ int mkpath(char* file_path, mode_t mode) {
     char* p;
     for (p=strchr(file_path+1, '/'); p; p=strchr(p+1, '/')) {
         *p='\0';
-        if (mkdir(file_path, mode)==-1) {
+        
+        if (mkdir(
+            file_path 
+#ifndef WIN32
+            ,mode
+#endif         
+            )==-1) {
             if (errno!=EEXIST) { *p='/'; return -1; }
         }
         *p='/';

@@ -19,32 +19,7 @@
 * THE SOFTWARE.
 */
 
-#define _XOPEN_SOURCE 500
-#include <time.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/wait.h>
-#include "../libdropbox/dropbox_api.h"
-
-#define PLUGIN_PREFIX "dropbox://"
-#define PLUGIN_PREFIX_LEN 10 // i counted
-#include <src/plugin.h>
-
-
-#if defined(_WIN32)
-#define URL_OPEN_CMD "start \"\""
-#define SILENT_CMD ""
-#elif defined(__APPLE__) && defined(__MACH__)
-#define URL_OPEN_CMD "open"
-#define SILENT_CMD ""
-#else
-#define URL_OPEN_CMD "sh -c 'xdg-open"
-#define SILENT_CMD "' >/dev/null 2&>/dev/null"
-#endif
-
+#include "dropbox.h"
 /* globals */
 char * client_key    = "gmq6fs74fuw1ead";
 char * client_secret = "ia87pt0ep6dvb7y";
@@ -54,6 +29,12 @@ utilities utils;
 json_object * config;
 json_object * cache;
 
+#ifndef HAVE_WARN_H
+  int WEXITSTATUS(int in){
+    args.log(LOGARGS, "COMPAT_WEXITSTATUS in=%d, %x", in,in );
+    return in;
+  }
+#endif
 /* convenience functions */
 const char * JSON_GET_STRING(json_object * obj, char * object){
   if (json_object_object_get_ex(obj,object,&obj)){
@@ -131,7 +112,7 @@ const char * get_prefix(){
   return PLUGIN_PREFIX;
 }
 
-char * init(init_args a){
+const char * init(init_args a){
   args = a;
   utils = args.utils;
   curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -146,14 +127,14 @@ char * init(init_args a){
     char cmd[512];
     sprintf(cmd, "%s \"%s?response_type=code&client_id=%s\" %s",URL_OPEN_CMD,OAUTH_2_AUTH,client_key, SILENT_CMD);
     //printf("go to https://www.dropbox.com/1/oauth2/authorize?response_type=code&client_id=%s and copy the code here\n",client_key);
-    args.stdout("Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
+    args.printf("Opening a browser to authorize this app for use with DropBox. Please paste the token here\n");
     int cmd_ret = system(cmd);
     args.log(LOGARGS, "command returned %d\n", WEXITSTATUS(cmd_ret));
     if(WEXITSTATUS(cmd_ret) != 0){
       // We don't have a browser.
       args.log(LOGARGS,"No browser, so we will put the url in the command line.\n");
-      args.stdout("oops, you don't seem to have a browser.\n");
-      args.stdout("Please go to %s?response_type=code&client_id=%s and log in.\n", OAUTH_2_AUTH, client_key);
+      args.printf("oops, you don't seem to have a browser.\n");
+      args.printf("Please go to %s?response_type=code&client_id=%s and log in.\n", OAUTH_2_AUTH, client_key);
     }
     if (fgets(token,128,stdin) == NULL) exit(1);
     int len = strlen(token);
@@ -283,7 +264,7 @@ void do_poll(int interval){
 }
 
 
-void watch_dir(char*path){
+void watch_dir(const char* path){
   args.log(LOGARGS,"i am supposed to be monitoring directory %s\n",path);
 }
 
@@ -302,7 +283,7 @@ int sync_read (int id, char * buffer, int len){ // deprecated
   return 0;
 }
 
-int sync_write(char * path, FILE * fp){
+int sync_write(const char * path, FILE * fp){
   args.log(LOGARGS,"path = '%s', file = %p\n",path,fp);
   path += PLUGIN_PREFIX_LEN;
   json_object * metadata = db_files_put(path,access_token,fp);
@@ -311,13 +292,13 @@ int sync_write(char * path, FILE * fp){
   return 1;
 }
 
-int sync_mkdir(char* path){
+int sync_mkdir(const char* path){
   path += PLUGIN_PREFIX_LEN;
   db_mkdir(path,access_token);
   return 0;
 }
 
-int sync_rm(char * path){
+int sync_rm(const char * path){
   path += PLUGIN_PREFIX_LEN;
   json_object * response = db_rm(path,access_token);
 
@@ -327,7 +308,7 @@ int sync_rm(char * path){
   return 0;
 }
 
-int sync_mv(char * from, char* to){
+int sync_mv(const char * from, const char* to){
   from += PLUGIN_PREFIX_LEN;
   to   += PLUGIN_PREFIX_LEN;
   db_mv(from,to,access_token);

@@ -1,8 +1,24 @@
-add_library(syncFile MODULE syncfs.c)
+Message("libjson ${JSONC_LIBRARIES}")
+if(HAVE_INOTIFY_H)
+	Message("Using Inotify for FileSystem events.")
+	add_library(syncFile MODULE syncfs.c linuxfs.c ../src/plugin.c ../src/json_helper.c)
+	target_link_libraries(syncFile LINK_PRIVATE ${JSONC_LIBRARIES})
+else()
+	find_package(UV REQUIRED)
+	if (UV_FOUND)
+		Message("Using libuv for FileSystem events.")
+		add_library(syncFile MODULE syncfs.c uvfs.c ../src/plugin.c ../src/json_helper.c)
+		target_link_libraries(syncFile LINK_PRIVATE ${JSONC_LIBRARIES})
+		target_link_libraries(syncFile LINK_PRIVATE ${UV_LIBRARIES})
+	endif()
+endif()
 
-add_library(syncDrobBox MODULE dropbox.c)
+if(WIN32)
+	set (COMPAT ${COMPAT} "strptime.c")
+endif()
+
+add_library(syncDrobBox MODULE dropbox.c ${COMPAT} ../src/plugin.c ../src/json_helper.c)
 target_link_libraries(syncDrobBox LINK_PRIVATE dropbox)
 
-add_library(syncGoogleDrive MODULE gdrive.c gdrive_cache.c)
+add_library(syncGoogleDrive MODULE gdrive.c ${COMPAT} gdrive_cache.c ../src/plugin.c ../src/json_helper.c)
 target_link_libraries(syncGoogleDrive LINK_PRIVATE gdrive)
-

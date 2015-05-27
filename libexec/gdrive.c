@@ -18,35 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#define  _XOPEN_SOURCE 500
-#include <libgen.h>
-#include <sys/wait.h>
-#include "../libgdrive/gdrive_api.h"
-#include "../src/os.h"
-#include "../src/json_helper.h"
-
-
-#define PLUGIN_PREFIX "gdrive://"
-#define PLUGIN_PREFIX_LEN 9
-#include "../src/plugin.h"
-#include "gdrive_cache.h"
-
-
-#define __GLOBAL_CLIENT_SECRET  "gcyc89d--P9nUb1KagVeV496"
-#define __GLOBAL_CLIENT_ID      "969830472849-93kt0dqjevn8jgr3g6erissiocdhk2fo.apps.googleusercontent.com"
-#define REFRESH_TOKEN "1/8obRmFxvhhebWSCYckmw_AfUlfTD-ERnwvoro8tMAKI"
-
-#if defined(_WIN32)
-#define URL_OPEN_CMD "start \"\""
-#define SILENT_CMD ""
-#elif defined(__APPLE__) && defined(__MACH__)
-#define URL_OPEN_CMD "open"
-#define SILENT_CMD "2&>/dev/null"
-#else
-#define URL_OPEN_CMD "sh -c 'xdg-open"
-#define SILENT_CMD "' 2&>/dev/null"
-#endif
+ 
+#include "gdrive.h"
 
 bool check_error(json_object* obj);
 char * mkdirP(const char * path);
@@ -58,6 +31,13 @@ utilities global_utils;
 utilities local_utils;
 utilities utils;
 init_args args;
+
+#ifndef HAVE_WARN_H
+  int WEXITSTATUS(int in){
+    args.log(LOGARGS, "COMPAT_WEXITSTATUS in=%d, %x", in,in );
+    return in;
+  }
+#endif
 
 json_object * lc_get(){
     if (local_cache == NULL){
@@ -250,15 +230,15 @@ char * login(){
   if(WEXITSTATUS(cmd_ret) != 0){
     // We don't have a browser.
     args.log(LOGARGS,"No browser, so we will put the url in the command line.\n");
-    args.stdout("oops, you don't seem to have a browser.\n");
-    args.stdout("Please go to %s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code and log in.",
+    args.printf("oops, you don't seem to have a browser.\n");
+    args.printf("Please go to %s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code and log in.",
   	"https://accounts.google.com/o/oauth2/auth",
   	__GLOBAL_CLIENT_ID,
   	"urn:ietf:wg:oauth:2.0:oob",
   	"https://www.googleapis.com/auth/drive"
   	);
   }
-	args.stdout("Paste code here\n");
+	args.printf("Paste code here\n");
 	if (fgets(token,128,stdin) == NULL) exit(1);
 	int len = strlen(token);
 	if (token[len-1] == '\n') token[len-1] = '\0';
@@ -552,7 +532,7 @@ void sync_listen( int (*call_back)(const char*path,int type)){
 * adds path to be watched for changes the plugin should only report changes
 * that occur in watched directories.
 */
-void watch_dir(char * path){
+void watch_dir(const char * path){
 
 }
 
@@ -561,7 +541,7 @@ void watch_dir(char * path){
 * this file is not required to be seekable, ie it may be a pipe/stream.
 */
 
-FILE * sync_open(char * path){
+FILE * sync_open(const char * path){
 	path += PLUGIN_PREFIX_LEN;
 	FILE * file;
     json_object * fcache = get_metadata(NULL,path);
@@ -581,7 +561,7 @@ FILE * sync_open(char * path){
 * returns the number of bytes written.
 * NOTE: this function may need to accept MIME type and file size later.
 */
-int sync_write(char * path, FILE * fp){
+int sync_write(const char * path, FILE * fp){
 	path += PLUGIN_PREFIX_LEN;
     int resp = upload(path,fp);
     return resp;
@@ -593,7 +573,7 @@ int sync_write(char * path, FILE * fp){
 * this behavior is akin to mkdir -p on *nix
 * returns non-zero if error
 */
-int sync_mkdir(char * path){
+int sync_mkdir(const char * path){
 	return 0;
 }
 
@@ -601,7 +581,7 @@ int sync_mkdir(char * path){
 * remove path whether file or directory. akin to rm -r on linux.
 * return non-zero if error
 */
-int sync_rm(char * path){
+int sync_rm(const char * path){
 	return 0;
 }
 
@@ -609,6 +589,6 @@ int sync_rm(char * path){
 * move file from to new location to.
 * return non-zero on error
 */
-int sync_mv(char * path){
+int sync_mv(const char * from, const char * to){
 	return 0;
 }

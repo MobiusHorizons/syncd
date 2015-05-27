@@ -1,0 +1,4 @@
+#cmakedefine HAVE_INOTIFY_H 1
+#cmakedefine HAVE_ERR_H 1
+#cmakedefine HAVE_FORK 1
+#cmakedefine HAVE_WAIT_H 1

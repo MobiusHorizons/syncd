@@ -1,10 +1,29 @@
-#include <ltdl.h>
+//#include <ltdl.h>
 #include "plugin.h"
 #include <stdio.h>
 #include <string.h>
 #include "os.h"
 
+bool __sigterm__ = false;
 
+void set_sigterm(int signum){
+    __sigterm__ = true;
+}
+
+bool plugin_get_sigterm(){
+	return __sigterm__;
+}
+
+void plugin_catch_events(){
+#ifndef WIN32
+    struct sigaction action;
+    memset(&action, 0, sizeof(struct sigaction));
+    action.sa_handler = set_sigterm;
+    sigaction(SIGTERM, &action, NULL);
+#endif
+}
+  
+ /* 
 plugin * get_plugin(char * filename, init_args args){
   lt_dlhandle  ptr = lt_dlopen(filename);
 
@@ -65,3 +84,4 @@ int loadPlugins(plugin *** return_plugins, char * dir_name){
 }
 
 
+*/

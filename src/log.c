@@ -1,21 +1,25 @@
 #include "log.h"
-#include <unistd.h>
-#define _GNU_SOURCE
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdarg.h>
 
 
 FILE *__logfile;
-int __stderr;
-int __stdout;
+FILE *__stderr;
+FILE *__stdout;
+
+int __stderr_fd;
+int __stdout_fd;
+
 
 void logging_init(const char *filename)
 {
 
 	// backup stdout and stderr
-	__stderr = dup(fileno(stderr));
-	__stdout = dup(fileno(stdout));
+	__stderr_fd = dup(fileno(stderr));
+	__stdout_fd = dup(fileno(stdout));
+	
+	__stdout = fdopen(__stdout_fd, "a");
+	__stderr = fdopen(__stderr_fd, "a");
 
 	// open the logfile under the filedescriptor of stdout
 	__logfile = freopen(filename, "a", stdout);
@@ -38,7 +42,8 @@ void logging_stdout(const char * fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	vdprintf (__stdout, fmt, args);
+	//vdprintf (__stdout_fd, fmt, args);
+	vfprintf (__stdout, fmt, args);
 	va_end(args);
 }
 
@@ -46,16 +51,17 @@ void logging_stderr(const char * fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	vdprintf (__stdout, fmt, args);
+	//vdprintf (__stdout_fd, fmt, args);
+	vfprintf (__stdout, fmt, args);
 	va_end(args);
 }
 
 void logging_close()
 {
 
-	dup2(__stdout, fileno(stdout));
-	dup2(__stderr, fileno(stderr));
+	dup2(__stdout_fd, fileno(stdout));
+	dup2(__stderr_fd, fileno(stderr));
 
-	close(__stderr);
-	close(__stdout);
+	close(__stderr_fd);
+	close(__stdout_fd);
 }

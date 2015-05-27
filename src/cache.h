@@ -23,7 +23,6 @@
 #define __CACHE_H_
 
 #include <json-c/json.h>
-
 /* Definition of functions provided by sync
  */
 

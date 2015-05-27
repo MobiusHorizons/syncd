@@ -26,7 +26,7 @@
 #include "cache.h"
 #include "log.h"
 #include <stdio.h>
-#include <ltdl.h>
+//#include <ltdl.h>
 #include <signal.h>
 
 #define S_CLOSE_WRITE   0x00000008
@@ -44,8 +44,8 @@ typedef struct {
   utilities utils;
   int(*event_callback)(const char*,int);
   LOGGING_LOG log;
-  LOGGING_STDOUT stdout;
-  LOGGING_STDERR stderr;
+  LOGGING_STDOUT printf;
+  LOGGING_STDERR error;
   //JSON json;
 } init_args;
 
@@ -61,39 +61,10 @@ typedef int   (*S_MKDIR     )	(const char*             );
 typedef void	(*S_UNLOAD    ) (                        );
 
 
-typedef struct{
-  /* functions */
-  S_INIT      init;
-  S_LISTEN    listen;
-  S_WATCH_DIR watch_dir;
-  S_OPEN_FILE open;
-  S_WRITE     write;
-  S_RM        rm;
-  S_MV        mv;
-  S_MKDIR     mkdir;
-  S_UNLOAD    unload;
-  /* properties */
-  char *      prefix;
-  int         prefix_len;
-  lt_dlhandle dlhandle;
-} plugin;
+bool plugin_get_sigterm();
+void plugin_catch_events();
 
-
-//int loadPlugins(plugin ***plugins,
-//                char     *dir);
-#ifdef PLUGIN_PREFIX
-  bool __sigterm__ = false;
-  #define CATCH_EVENTS __catch_events();
-  void __set_sigterm(int signum){
-    __sigterm__ = true;
-  }
-  void __catch_events(){
-    struct sigaction action;
-    memset(&action, 0, sizeof(struct sigaction));
-    action.sa_handler = __set_sigterm;
-    sigaction(SIGTERM, &action, NULL);
-  }
-  #define CLEAN_BREAK  if (__sigterm__) return;
-#endif
+#define CATCH_EVENTS plugin_catch_events();
+#define CLEAN_BREAK if (plugin_get_sigterm()) return;
 
 #endif

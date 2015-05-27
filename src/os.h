@@ -28,17 +28,8 @@
 #include <pthread.h>
 #include <errno.h>
 #include "cache.h"
-//#include <config.h>
-#define HAVE_FORK
-#ifndef HAVE_FORK 
-    #define fork() pseudo_fork(i,argv[0])
-    int pseudo_fork(int plugin_num,char * exec_name){
-		char pnum[5];
-        sprintf(&pnum,"%d",plugin_num)
-        printf("running '%s %s %s'\n",exec_name,"-p",pnum);
-        int error = spawnl(P_NOWAIT,exec_name,exec_name,"-p",pnum);
-	}
-#endif
+#include <config.h>
+
 #if defined(WIN32)
 	#include<windows.h>
 	#include<malloc.h>
