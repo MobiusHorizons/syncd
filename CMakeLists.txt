@@ -18,8 +18,9 @@ check_include_files("sys/wait.h" HAVE_WAIT_H)
 check_function_exists(fork HAVE_FORK)
 
 include_directories("${CMAKE_BINARY_DIR}")
-
 include_directories("${CMAKE_CURRENT_LIST_DIR}")
+
+set(PLUGIN_DIR "${CMAKE_INSTALL_PREFIX}/lib/syncd/plugins")
 add_subdirectory(librest)
 add_subdirectory(libdropbox)
 add_subdirectory(libgdrive)

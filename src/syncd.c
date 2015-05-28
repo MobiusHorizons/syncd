@@ -27,7 +27,7 @@
 #include <plugin.h>
 #include <sys/stat.h>
 #include "log.h"
-
+#include <config.h>
 typedef struct {
 	lt_dlhandle ptr;
 	const char * prefix;
@@ -42,18 +42,18 @@ json_object * rules;
 #define LIBDIR "plugins"
 #endif
 
-#ifndef HAVE_FORK 
+#ifndef HAVE_FORK
 #include <windows.h>
     #define fork() pseudo_fork(i,argv[0])
     int pseudo_fork(int plugin_num, char * exec_name){
 		char pArg[5];
 		STARTUPINFO si;
     	PROCESS_INFORMATION pi;
-		
+
 		memset( &si, 0, sizeof(si) );
     	si.cb = sizeof(si);
     	memset( &pi, 0, sizeof(pi) );
-	
+
         sprintf(pArg,"-p %d",plugin_num);
         printf("running '%s %s'\n",exec_name,pArg);
         //int error = spawnl(P_NOWAIT,exec_name,exec_name,"-p",pnum);
@@ -64,7 +64,7 @@ json_object * rules;
 	        FALSE,          // Set handle inheritance to FALSE
 	        0,              // No creation flags
 	        NULL,           // Use parent's environment block
-	        NULL,           // Use parent's starting directory 
+	        NULL,           // Use parent's starting directory
 	        &si,            // Pointer to STARTUPINFO structure
 	        &pi 			// Pointer to PROCESS_INFORMATION structure
 		);
@@ -210,7 +210,7 @@ int cb(const char * path, int mask){
 
 lt_dlhandle loadPlugin(const char * filename ){
 	const char * ext = strrchr(filename, '.');
-	if(strcmp(ext, ".la") != 0) return NULL;
+	if(strcmp(ext, PLUGIN_EXT) != 0) return NULL;
 	lt_dlhandle out = lt_dlopen(filename);
 	const char * (*get_prefix)() = (const char * (*)()) lt_dlsym (out, "get_prefix");
 	if ( get_prefix != NULL){

@@ -16,3 +16,5 @@ target_link_libraries(syncd LINK_PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${LTDL_LIBRAR
 
 add_executable(testPlugin testPlugin.c cache.c ipc_semaphore.c shared_memory.c json_helper.c log.c)
 target_link_libraries(testPlugin LINK_PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${LTDL_LIBRARIES} ${JSONC_LIBRARIES} ${SHARED_MEM})
+
+install(TARGETS syncd RUNTIME DESTINATION bin)

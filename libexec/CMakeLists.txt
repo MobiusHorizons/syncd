@@ -17,8 +17,12 @@ if(WIN32)
 	set (COMPAT ${COMPAT} "strptime.c")
 endif()
 
-add_library(syncDrobBox MODULE dropbox.c ${COMPAT} ../src/plugin.c ../src/json_helper.c)
-target_link_libraries(syncDrobBox LINK_PRIVATE dropbox)
+add_library(syncDropBox MODULE dropbox.c ${COMPAT} ../src/plugin.c ../src/json_helper.c)
+target_link_libraries(syncDropBox LINK_PRIVATE dropbox)
 
 add_library(syncGoogleDrive MODULE gdrive.c ${COMPAT} gdrive_cache.c ../src/plugin.c ../src/json_helper.c)
 target_link_libraries(syncGoogleDrive LINK_PRIVATE gdrive)
+
+
+install(TARGETS syncGoogleDrive syncDropBox syncFile
+        LIBRARY DESTINATION lib/syncd/plugins)
