@@ -7,7 +7,8 @@ include(CheckIncludeFiles)
 include(CheckFunctionExists)
 
 find_package(JSONC)
-find_package(THREADS)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads)
 
 include_directories(${JSONC_INCLUDE_DIRS})
 

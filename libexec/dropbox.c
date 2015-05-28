@@ -20,6 +20,7 @@
 */
 
 #include "dropbox.h"
+#include <config.h>
 /* globals */
 char * client_key    = "gmq6fs74fuw1ead";
 char * client_secret = "ia87pt0ep6dvb7y";
@@ -29,7 +30,7 @@ utilities utils;
 json_object * config;
 json_object * cache;
 
-#ifndef HAVE_WARN_H
+#ifndef HAVE_WAIT_H
   int WEXITSTATUS(int in){
     args.log(LOGARGS, "COMPAT_WEXITSTATUS in=%d, %x", in,in );
     return in;

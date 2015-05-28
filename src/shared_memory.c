@@ -12,10 +12,10 @@
         void * mem;
         char * name;
     } sm_obj;
-    
+
     sm_obj * sm_mapping;
     int sm_mapping_length;
-    
+
     void * shared_mem_alloc(size_t size, const char * name){
         HANDLE hMapFile;
         void * mem;
@@ -37,18 +37,18 @@
                         0,
                         size
         );
-        
+
         sm_obj m;
         m.hMapFile = hMapFile;
         m.mem = mem;
         m.name = strdup(name);
-        
+
         sm_mapping = realloc(sm_mapping, sizeof(sm_obj) * ++sm_mapping_length);
         sm_mapping[sm_mapping_length-1] = m;
-        
-        return (void *) mem; 
+
+        return (void *) mem;
     }
-    
+
     void shared_mem_dealloc(void* mem, size_t len, const char * name){
         // TODO: free the sm_obj, collapsing the array.
         int i;
@@ -57,14 +57,14 @@
             m = sm_mapping[i];
             if (strcmp(m.name,name) == 0) break;
         }
-        
+
         UnmapViewOfFile((LPTSTR) mem);
         CloseHandle(m.hMapFile);
         free(m.name);
         m.name = NULL;
         m.mem = NULL;
     }
-    
+
 #else
 
 #include <unistd.h>
@@ -77,8 +77,8 @@
         void * ret = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
         return ret;
     }
-    
-    void shared_mem_dealloc(void* mem, int len, const char * name){
+
+    void shared_mem_dealloc(void* mem, size_t len, const char * name){
         munmap(mem, len);
         shm_unlink(name);
     }

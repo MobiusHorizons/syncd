@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
- 
+
 #include "gdrive.h"
 
 bool check_error(json_object* obj);
@@ -32,7 +32,7 @@ utilities local_utils;
 utilities utils;
 init_args args;
 
-#ifndef HAVE_WARN_H
+#ifndef HAVE_WAIT_H
   int WEXITSTATUS(int in){
     args.log(LOGARGS, "COMPAT_WEXITSTATUS in=%d, %x", in,in );
     return in;

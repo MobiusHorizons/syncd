@@ -34,8 +34,8 @@
 	}
 
 	int semaphore_delete(semaphore s, const char *name){
-		  int ret = sem_destroy(s.semaphore, name);
-		  if (ret == 0) shared_mem_dealloc(s.semaphore, sizeof(sem_t));
+		  int ret = sem_destroy(s.semaphore);
+		  if (ret == 0) shared_mem_dealloc(s.semaphore, sizeof(sem_t), name);
 		  return ret;
 	}
 

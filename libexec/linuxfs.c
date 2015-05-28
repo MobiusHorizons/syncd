@@ -20,7 +20,7 @@
  */
 
 #include <sys/inotify.h>
-
+#include "syncfs.h"
 
 static int inotify_fd;
 static char** watchpoints;

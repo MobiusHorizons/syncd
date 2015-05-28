@@ -1,5 +1,6 @@
 #include "log.h"
 #include <stdio.h>
+#include <unistd.h>
 #include <stdarg.h>
 
 
@@ -17,7 +18,7 @@ void logging_init(const char *filename)
 	// backup stdout and stderr
 	__stderr_fd = dup(fileno(stderr));
 	__stdout_fd = dup(fileno(stdout));
-	
+
 	__stdout = fdopen(__stdout_fd, "a");
 	__stderr = fdopen(__stderr_fd, "a");
 
