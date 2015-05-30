@@ -12,7 +12,7 @@ find_package(Threads)
 
 include_directories(${JSONC_INCLUDE_DIRS})
 
-check_include_files("inotify.h" HAVE_INOTIFY_H)
+check_include_files("sys/inotify.h" HAVE_INOTIFY_H)
 check_include_files("err.h" HAVE_ERR_H)
 check_include_files("sys/wait.h" HAVE_WAIT_H)
 check_function_exists(fork HAVE_FORK)

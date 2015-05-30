@@ -3,6 +3,5 @@ dropbox
 *.o
 *.dll
 *.so
-*.txt
 *.a
 *.zip

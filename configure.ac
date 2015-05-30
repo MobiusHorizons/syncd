@@ -3,9 +3,8 @@
 
 AC_PREREQ([2.69])
 AC_INIT([syncd], [0.9], [bec8@students.calvin.edu])
-# remove b/c no config.h?
-# AM_INIT_AUTOMAKE([1.14 foreign no-define])
-AM_INIT_AUTOMAKE([subdir-objects])
+#AM_INIT_AUTOMAKE([1.14 foreign no-define])
+AM_INIT_AUTOMAKE( foreign [subdir-objects])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 
@@ -27,16 +26,24 @@ AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rest], [rest_build_param])
 # json-c:
 AC_CHECK_LIB([json-c], [json_object_new_object])
-# libuv
-AC_CHECK_LIB([uv], [uv_run])
 #posix semaphore and shared memory
 AC_CHECK_LIB([rt], [shm_open])
 
 # inotify:
-AC_CHECK_HEADER(sys/inotify.h, 
-                [AC_DEFINE(HAVE_INOTIFY_H, 1, 
-                 [Define to 1 if you have <sys/inotify.h>.])],
-                [AC_MSG_NOTICE([No inotify, using libuv as a backup])])
+AC_CHECK_HEADER(sys/inotify.h,
+  [
+    AC_DEFINE(
+      HAVE_INOTIFY_H, 1,
+      [Define to 1 if you have <sys/inotify.h>.]
+    )
+    AC_MSG_NOTICE([Using Inotify for FileSystem Events])
+  ],[
+    AC_MSG_NOTICE([No inotify, using libuv as a backup])
+    AC_CHECK_LIB([uv], [uv_run])
+  ])
+
+#wait.h:
+AC_CHECK_HEADERS([wait.h err.h])
 
 # libtdl
 LT_CONFIG_LTDL_DIR([libltdl])
@@ -55,11 +62,11 @@ AC_TYPE_SIZE_T
 
 # Checks for library functions.
 AC_FUNC_FORK
-AC_FUNC_MALLOC
+#AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_FUNC_MMAP
-AC_FUNC_REALLOC
+#AC_FUNC_REALLOC
 AC_CHECK_FUNCS([ftruncate mkdir strchr strdup strerror])
+AC_DEFINE(PLUGIN_EXT, ".la", [extention to look for for plugins])
 
 AC_OUTPUT(Makefile librest/Makefile libdropbox/Makefile libgdrive/Makefile libexec/Makefile src/Makefile )
-
