@@ -33,7 +33,7 @@
 
 const char * EXPORT_SHARED init            (init_args               );
 void         EXPORT_SHARED sync_listen     (int(*)(const char*,int) );
-FILE *       EXPORT_SHARED sync_open_file  (const char*             );
+FILE *       EXPORT_SHARED sync_open       (const char*             );
 int          EXPORT_SHARED sync_write      (const char*,FILE *      );
 int          EXPORT_SHARED sync_rm         (const char*             );
 int          EXPORT_SHARED sync_mv         (const char*,const char* );
