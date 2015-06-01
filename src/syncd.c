@@ -22,7 +22,6 @@
 #include "os.h"
 #include <unistd.h>
 #include <ltdl.h>
-#include "../libltdl/ltdl.h"
 #include <string.h>
 #include <plugin.h>
 #include <sys/stat.h>

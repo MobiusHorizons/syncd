@@ -1,5 +1,5 @@
 #include "gdrive_api.h"
-#define REFRESH_TOKEN "1/8obRmFxvhhebWSCYckmw_AfUlfTD-ERnwvoro8tMAKI" 
+#define REFRESH_TOKEN "1/8obRmFxvhhebWSCYckmw_AfUlfTD-ERnwvoro8tMAKI"
 
 int main(int argc, char ** argv){
 	json_object * cache = json_object_from_file("./cache.json");
@@ -31,11 +31,11 @@ int main(int argc, char ** argv){
 	json_object_put(gdrive_files_list("title='test' and mimeType = 'application/vnd.google-apps.folder'",0));*/
 	char * next_page_token = NULL;
 	do {
-		json_object * changes = gdrive_get_changes(next_page_token,0,10);
+		json_object * changes = gdrive_get_changes(next_page_token,0,10,false, false);
 //		printf("%s\n",json_object_to_json_string_ext(changes,JSON_C_TO_STRING_PRETTY));
 		free(next_page_token);
 		next_page_token = JSON_GET_STRING(changes,"nextPageToken");
-		if (next_page_token != NULL) next_page_token = strdup(next_page_token); 
+		if (next_page_token != NULL) next_page_token = strdup(next_page_token);
 		int i;
 		json_object * items;
 		if (json_object_object_get_ex(changes, "items",&items)){
@@ -52,11 +52,11 @@ int main(int argc, char ** argv){
 						JSON_GET_STRING(change,"createdDate"),
 						modified
 					) == 0;
-					bool is_dir =  strcmp( 
+					bool is_dir =  strcmp(
 						JSON_GET_STRING(change,"mimeType"),
 						"application/vnd.google-apps.folder"
-					) == 0;	
-					printf("file id: '%s', title: '%s%s' %s on %s\n", 
+					) == 0;
+					printf("file id: '%s', title: '%s%s' %s on %s\n",
 						id,
 						title,
 						is_dir?"/":"",

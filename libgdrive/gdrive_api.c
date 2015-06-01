@@ -459,7 +459,8 @@ json_object * gdrive_files_list_children(char * id, int pageToken){
 
 	buffer resp = rest_get_buffer(params,url);
 	json_object * response = json_tokener_parse(resp.data);
-	json_object * list = json_object_object_get(response, "items");
+	json_object * list;
+	json_object_object_get_ex(response, "items", &list);
 	int i;
 	for (i = 0; i < json_object_array_length(list); i++){
 		const char * folder_id = JSON_GET_STRING(json_object_array_get_idx(list,i),"id");

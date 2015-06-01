@@ -28,7 +28,7 @@
 #include "dropbox_urls.h"
 
 
-FILE * db_files_get(char* path, const char* access_token){
+FILE * db_files_get(const char* path, const char* access_token){
 	char* params[2];
 	char * url = malloc(strlen(path) + strlen(FILES_GET) + 2);
 
@@ -42,7 +42,7 @@ FILE * db_files_get(char* path, const char* access_token){
 	return file;
 }
 
-json_object * db_files_put(char* path, const char* access_token, FILE * input_file){
+json_object * db_files_put(const char* path, const char* access_token, FILE * input_file){
 	char* params[2];
 	char * url = malloc(strlen(path) + strlen(FILES_PUT) + 2);
 
@@ -60,7 +60,7 @@ json_object * db_files_put(char* path, const char* access_token, FILE * input_fi
 	return response;
 }
 
-json_object * db_metadata (char* path, const char* access_token, bool list){
+json_object * db_metadata (const char* path, const char* access_token, bool list){
 	char * params[3];
 	int i;
 	rest_build_param(&params[0],"access_token",access_token);
@@ -80,7 +80,7 @@ json_object * db_metadata (char* path, const char* access_token, bool list){
 	return response;
 }
 
-json_object * db_longpoll (char* cursor, int timeout){
+json_object * db_longpoll (const char* cursor, int timeout){
 	char * params[3];
 	int i;
 	if (timeout > 480) timeout = 480;// max allowed
@@ -146,7 +146,7 @@ const char * db_authorize_token (char* token, char * client_id, char* client_sec
 	return NULL;
 }
 
-json_object * db_mkdir(char* name, const char * access_token){
+json_object * db_mkdir(const char* name, const char * access_token){
 	char * params[4];
 	params[0] = "root=dropbox";
 	rest_build_param(&params[1], "path",name);
@@ -162,7 +162,7 @@ json_object * db_mkdir(char* name, const char * access_token){
 	return response;
 }
 
-json_object * db_mv(char* from, char * to, const char * access_token){
+json_object * db_mv(const char* from, const char * to, const char * access_token){
 	char * params[5];
 	params[0] = "root=dropbox";
 	rest_build_param(&params[1], "from_path",from);
@@ -180,7 +180,7 @@ json_object * db_mv(char* from, char * to, const char * access_token){
 	return response;
 }
 
-json_object * db_rm(char* name, const char * access_token){
+json_object * db_rm(const char* name, const char * access_token){
 	char * params[4];
 	params[0] = "root=dropbox";
 	rest_build_param(&params[1], "path",name);
