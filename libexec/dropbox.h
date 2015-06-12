@@ -1,11 +1,11 @@
-#include <string.h>
 #define _XOPEN_SOURCE 500
-#define XOPEN_SOURCE
 #include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdio.h>
+#undef _XOPEN_SOURCE
+#include <string.h>
 #include "../libdropbox/dropbox_api.h"
 
 #define PLUGIN_PREFIX "dropbox://"

@@ -1,10 +1,12 @@
-#include <string.h>
 #define  _XOPEN_SOURCE 500
+#include <time.h>
 #include "gdrive_cache.h"
+#include "gdrive.h"
 #include <libgen.h>
+#undef _XOPEN_SOURCE
+#include <string.h>
 #include "../libgdrive/gdrive_api.h"
 #include "../src/os.h"
-#include <sys/time.h>
 
 
 
