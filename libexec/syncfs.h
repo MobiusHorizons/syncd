@@ -1,10 +1,10 @@
 #ifndef _SYNCFS_H_
 #define _SYNCFS_H_
 
+#include <string.h>
 #define _XOPEN_SOURCE 500
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <ftw.h>
@@ -14,6 +14,9 @@
 #include <dirent.h>
 /* limits.h defines "PATH_MAX". */
 #include <limits.h>
+#ifndef PATH_MAX
+#include <sys/syslimits.h>
+#endif
 #define PLUGIN_PREFIX "file://"
 #define PLUGIN_PREFIX_LEN 7
 

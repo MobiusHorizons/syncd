@@ -20,7 +20,6 @@
  */
 
 #include "gdrive.h"
-
 bool check_error(json_object* obj);
 char * mkdirP(const char * path);
 

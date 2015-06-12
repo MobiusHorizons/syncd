@@ -1,5 +1,7 @@
+#include <string.h>
 #define  _XOPEN_SOURCE 500
 #include <libgen.h>
+#include <stdlib.h>
 #include "../libgdrive/gdrive_api.h"
 #include "../src/os.h"
 #include "../src/json_helper.h"
@@ -20,14 +22,13 @@
 
 #define __GLOBAL_CLIENT_SECRET  "gcyc89d--P9nUb1KagVeV496"
 #define __GLOBAL_CLIENT_ID      "969830472849-93kt0dqjevn8jgr3g6erissiocdhk2fo.apps.googleusercontent.com"
-#define REFRESH_TOKEN "1/8obRmFxvhhebWSCYckmw_AfUlfTD-ERnwvoro8tMAKI"
 
 #if defined (WIN32)
 #define URL_OPEN_CMD "start \"\""
 #define SILENT_CMD ""
 #elif defined(__APPLE__) && defined(__MACH__)
 #define URL_OPEN_CMD "open"
-#define SILENT_CMD "2&>/dev/null"
+#define SILENT_CMD ""
 #else
 #define URL_OPEN_CMD "sh -c 'xdg-open"
 #define SILENT_CMD "' 2&>/dev/null"

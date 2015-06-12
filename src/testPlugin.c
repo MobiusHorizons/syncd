@@ -5,6 +5,7 @@
 
 int cb(const char * name, int mode){
 	printf("%s %d\n", name, mode);
+	return 0;
 }
 
 int main(int argc, char ** argv){
@@ -22,19 +23,19 @@ int main(int argc, char ** argv){
 		logging_stdout("Error loading '%s': %s\n", plugin_name, lt_dlerror());
 		return 1;
 	}
-	
+
 	init    = (S_INIT  ) lt_dlsym(plugin, "init");
 	if (init == NULL){
 		logging_stdout("Error loading function 'init': %s\n", lt_dlerror());
 		return 1;
 	}
-	
+
 	unload	= (S_UNLOAD) lt_dlsym(plugin, "sync_unload");
 	if (unload == NULL){
 		logging_stdout("Error loading function 'sync_unload': %s\n", lt_dlerror());
 		return 1;
 	}
-		
+
 	init_args args;
 	args.event_callback = cb;
 	args.log = logging_log;
@@ -45,4 +46,5 @@ int main(int argc, char ** argv){
 	logging_close();
 	cache_clear();
 	puts(prefix);
+	return 0;
 }

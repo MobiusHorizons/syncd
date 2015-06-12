@@ -1,10 +1,9 @@
+#include <string.h>
 #define  _XOPEN_SOURCE 500
 #include "gdrive_api.h"
 #include <ctype.h>
 #define __GLOBAL_CLIENT_ID 	"969830472849-93kt0dqjevn8jgr3g6erissiocdhk2fo.apps.googleusercontent.com"
 #define __GLOBAL_CLIENT_SECRET	"gcyc89d--P9nUb1KagVeV496"
-#define REFRESH_TOKEN "1/8obRmFxvhhebWSCYckmw_AfUlfTD-ERnwvoro8tMAKI"
-
 
 
 /* globals*/

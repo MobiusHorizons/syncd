@@ -1,3 +1,4 @@
+#include <string.h>
 #define _XOPEN_SOURCE 500
 #define XOPEN_SOURCE
 #include <time.h>
@@ -5,7 +6,6 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 #include "../libdropbox/dropbox_api.h"
 
 #define PLUGIN_PREFIX "dropbox://"
@@ -17,7 +17,7 @@
 	#define EXPORT_SHARED __declspec(dllexport)
 #else
 	#include <sys/wait.h>
-	#define EXPORT_SHARED 
+	#define EXPORT_SHARED
 #endif
 
 #if defined(_WIN32)

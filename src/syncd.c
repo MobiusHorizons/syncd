@@ -27,6 +27,10 @@
 #include <sys/stat.h>
 #include "log.h"
 #include <config.h>
+#ifndef PATH_MAX
+#include <sys/syslimits.h>
+#endif
+
 typedef struct {
 	lt_dlhandle ptr;
 	const char * prefix;
@@ -70,6 +74,18 @@ json_object * rules;
 		logging_stdout ("Spawning process with PID %d\n", pi.dwProcessId);
 		return pi.dwProcessId;
 	}
+#endif
+#if defined(__APPLE__) && defined(__MACH__)
+	int pseudo_fork(int plugin_num, char* exec_name){
+		char pnum[10];
+		sprintf(pnum,"%d",plugin_num);
+		int pid = fork();
+		logging_stdout ("Spawning process with PID %d\n", pid);
+		if (pid != 0) return pid;
+		execl(exec_name, exec_name, "-p", pnum, NULL);
+		return 0;
+	}
+	#define fork() pseudo_fork(i,argv[0])
 #endif
 
 json_object * getCacheDetails(int pnum, const char * path) {

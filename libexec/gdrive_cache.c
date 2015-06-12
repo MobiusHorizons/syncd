@@ -1,10 +1,11 @@
+#include <string.h>
 #define  _XOPEN_SOURCE 500
 #include "gdrive_cache.h"
 #include <libgen.h>
 #include "../libgdrive/gdrive_api.h"
 #include "../src/os.h"
 #include <sys/time.h>
-#include <string.h>
+
 
 
 #define PLUGIN_PREFIX "gdrive://"
