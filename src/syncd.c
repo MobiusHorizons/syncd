@@ -72,15 +72,6 @@ json_object * rules;
 	}
 #endif
 
-json_object * getCacheDetails(int pnum, const char * path) {
-	const char * plugin_prefix = plugins[pnum].prefix;
-	json_object * foc = getFileCache(plugin_prefix,path +strlen(plugin_prefix));
-	json_object * details = json_object_new_object();
-	json_copy(&details,"size",foc, json_object_new_int64(0));
-	json_copy(&details, "modified", foc,json_object_new_int64(0));
-	return details;
-}
-
 char ** free_all(char ** array, int length){
 	int i;
 	if (array == NULL) length = 0;

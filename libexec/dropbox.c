@@ -92,8 +92,6 @@ void update_cache(json_object * entry,const char *fname){
   }
   size = json_object_new_int64(json_object_get_int64(size)); // copy
   args.log(LOGARGS,"size : %ld\n",json_object_get_int64(size));
-
-  //    json_copy(&cfile, "rev", entry, json_object_new_string("blank"));
   {
     const char *rev;
     if ((rev = json_get_string(entry,"rev"))==NULL){

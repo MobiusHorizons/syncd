@@ -34,7 +34,7 @@ int update_file_cache(char * filename, int update){
     int metadata_changed = 0;
     struct stat details;
     args.log(LOGARGS,"filename = %s\n",filename);
-    json_object * cache_entry = json_object_get(utils.getFileCache(PLUGIN_PREFIX,filename));
+    json_object * cache_entry = json_copy(utils.getFileCache(PLUGIN_PREFIX,filename),false);
     if (cache_entry == NULL){
         metadata_changed = S_CREATE;
         args.log(LOGARGS,"cache was null for %s\n",filename);
@@ -142,8 +142,9 @@ void watch_dir_recurse(char * dir_name){
 }
 
 void watch_dir (char * dir_name){
-    dir_name += PLUGIN_PREFIX_LEN;
-	  sync_mkdir(dir_name);
+	  args.log(LOGARGS, "syncFS:watch_dir(%s)\n", dir_name);
+		sync_mkdir(dir_name);
+		dir_name += PLUGIN_PREFIX_LEN;
     watch_dir_recurse(dir_name);
 }
 
@@ -190,12 +191,12 @@ int mkpath(char* file_path, mode_t mode) {
     char* p;
     for (p=strchr(file_path+1, '/'); p; p=strchr(p+1, '/')) {
         *p='\0';
-        
+
         if (mkdir(
-            file_path 
+            file_path
 #ifndef WIN32
             ,mode
-#endif         
+#endif
             )==-1) {
             if (errno!=EEXIST) { *p='/'; return -1; }
         }

@@ -23,15 +23,13 @@
 #include <math.h>
 
 /* Utilities */
-json_object * json_copy(json_object ** to_ptr, const char * name, json_object * from, json_object * def) {
-        json_object * obj;
-        json_object * to = * to_ptr;
-        if (json_object_object_get_ex(from, name, &obj)){
-            json_object_object_add(to,name,obj);
-        } else {
-            json_object_object_add(to,name,def);
+json_object * json_copy(json_object * from, bool deep) {
+        if (!deep){
+          return json_object_get(from);
         }
-        return to;
+        return json_tokener_parse(
+          json_object_to_json_string(from)
+        );
 }
 
 /* Getters */
