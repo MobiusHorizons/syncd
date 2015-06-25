@@ -112,7 +112,6 @@ json_object * db_delta    (char* cursor, const char* access_token){
 
 	buffer resp = rest_post(params,DELTA);
 	json_object * response = json_tokener_parse(resp.data);
-//	printf(json_object_to_json_string(response));
 
 	buffer_free(resp);
 	free(params[0]);
@@ -120,7 +119,7 @@ json_object * db_delta    (char* cursor, const char* access_token){
 	return response;
 }
 
-const char * db_authorize_token (char* token, char * client_id, char* client_secret){
+char * db_authorize_token (char* token, char * client_id, char* client_secret){
 	char * params[5];
 	json_object *access_token;
 
@@ -140,8 +139,13 @@ const char * db_authorize_token (char* token, char * client_id, char* client_sec
 	free(params[3]);
 
 	if (json_object_object_get_ex(response,"access_token",&access_token)){
-		return json_object_get_string(access_token);
+
+	  char * at = (char*)(json_object_get_string(access_token));
+	  if (at != NULL) at = strdup(at);
+	  json_object_put(response);
+		return at;
 	}
+  json_object_put(response);
 	//printf("%s\n",json_object_to_json_string(response));
 	return NULL;
 }

@@ -47,7 +47,7 @@ struct JSON_HELPER {
 };
 typedef struct JSON_HELPER JSON_HELPER;
 
-json_object * json_copy(json_object **, const char *, json_object *, json_object *);
+json_object * json_copy(json_object * from, bool deep);
 
 const char * json_get_string(json_object * obj, const char * name);
 long long int json_get_int(json_object * obj, const char * name, long long int def);

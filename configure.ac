@@ -36,10 +36,14 @@ AC_CHECK_HEADER(sys/inotify.h,
       HAVE_INOTIFY_H, 1,
       [Define to 1 if you have <sys/inotify.h>.]
     )
+    AM_CONDITIONAL(USE_INOTIFY, true)
+    AM_CONDITIONAL(USE_LIBUV, false)
     AC_MSG_NOTICE([Using Inotify for FileSystem Events])
   ],[
     AC_MSG_NOTICE([No inotify, using libuv as a backup])
     AC_CHECK_LIB([uv], [uv_run])
+    AM_CONDITIONAL(USE_INOTIFY, false)
+    AM_CONDITIONAL(USE_LIBUV, true)
   ])
 
 #wait.h:

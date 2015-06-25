@@ -32,7 +32,7 @@ json_object * db_files_put(const char* path, const char* access_token, FILE *   
 json_object * db_metadata (const char* path, const char* access_token, bool list);
 json_object * db_delta    (char* cursor, const char* access_token);
 json_object * db_longpoll (const char* cursor,int timeout);
-const char * db_authorize_token (char* token, char * client_id, char* client_secret);
+char * db_authorize_token (char* token, char * client_id, char* client_secret);
 json_object * db_mkdir(const char * name, const char * access_token);
 json_object * db_mv(const char * from, const char * to, const char * access_token);
 json_object * db_rm(const char * name, const char * access_token);

@@ -32,6 +32,7 @@
 #include "shared_memory.h"
 #include "log.h"
 #include <config.h>
+#include <json-c/json_object_private.h>
 
 #ifndef MAP_FILE
 #define MAP_FILE 0
@@ -76,15 +77,17 @@ void cache_init(){
             PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, cacheFD, 0);
     if (cacheFile == MAP_FAILED ) errx(1,"failed");
     // setup semaphores.
-    cache_semaphore = semaphore_create(1, "SYNCD\\cache");
+    cache_semaphore  = semaphore_create(1, "SYNCD\\cache" );
     config_semaphore = semaphore_create(1, "SYNCD\\config");
 }
 
 void cache_clear(){
     munmap(cacheFile, *cacheLength);
     close(cacheFD);
-    semaphore_delete(cache_semaphore, "SYNCD\\cache");
-    semaphore_delete(config_semaphore, "SYNCD\\cache");
+		json_object_put(config);
+	  json_object_put(cache);
+    semaphore_delete(cache_semaphore , "SYNCD\\cache" );
+    semaphore_delete(config_semaphore, "SYNCD\\config");
 }
 
 json_object * getCache(const char * plugin_prefix){
@@ -107,7 +110,7 @@ json_object * getFileCache(const char * plugin_prefix,const char * fname){
         logging_log(LOGARGS,"%s\n",json_object_to_json_string(fcache));
         return fcache;
     } else {
-        logging_log(LOGARGS," failure\n");
+        logging_log(LOGARGS," cache miss.\n");
         return NULL;
     }
 }
@@ -123,6 +126,7 @@ json_object * getConfig(const char * plugin_prefix){
 }
 
 void addCache(const char * plugin_prefix, const char * fname, json_object * entry){
+	  printf("addCache: Refcount = %d\n", entry->_ref_count);
     json_object * cache_entry = json_object_get(entry);
     json_object * pcache = getCache(plugin_prefix);
     if (pcache == NULL){/* create cache for plugin*/
@@ -130,12 +134,16 @@ void addCache(const char * plugin_prefix, const char * fname, json_object * entr
         json_object_object_add(cache, plugin_prefix, pcache);
     }
     if (fname != NULL && strlen(fname) != 0 && cache_entry != NULL){
+				if (json_object_object_get_ex(pcache, fname, NULL)){
+					json_object_object_del(pcache, fname);
+				}
         json_object_object_add(pcache, fname, cache_entry);
         push_cache();
     } else {
-        logging_log(LOGARGS,"addaCache Failed: fname = %s; cache_entry = %s\n",fname,json_object_to_json_string(cache_entry));
+        printf("addCache Failed: fname = %s; cache_entry = %s\n",fname,json_object_to_json_string(cache_entry));
     }
     json_object_put(cache_entry);
+	  printf("addCache: Refcount = %d\n", entry->_ref_count);
 }
 
 void updateCache(const char * plugin_prefix, json_object * pcache){
