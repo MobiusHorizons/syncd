@@ -102,10 +102,13 @@ char * rest_escape(char * url){
 void * run_curl(void* ptr){
 	if (ptr != NULL){
 		run_curl_args * args = (run_curl_args*) ptr;
-		curl_easy_perform(args->curl);
-		curl_easy_cleanup(args->curl);
+		CURLcode res = curl_easy_perform(args->curl);
+	  if (res != CURLE_OK){
+			 printf("rest_get error: %s\n", curl_easy_strerror(res));
+		}
 		fclose(args->file);
 		free(args->url);
+		curl_easy_cleanup(args->curl);
 	}
     return NULL;
 }
@@ -204,10 +207,11 @@ buffer rest_get_buffer (char ** params, char * url){
 	CURLcode res = curl_easy_perform(curl);
 	if (res != CURLE_OK){
 		//TODO: return better error handling;
+	 	 printf("rest_get_buffer error: %s\n", curl_easy_strerror(res));
 		//printf("code = %d, data= %s\n",res,data.data);
 	}
-	curl_easy_cleanup(curl);
 	free(full_url);
+	curl_easy_cleanup(curl);
 	return data;
 }
 
@@ -223,11 +227,12 @@ buffer  rest_post (char ** params, char * url){
 	curl_easy_setopt(curl,CURLOPT_WRITEDATA, &data);
 	curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,WriteBufferCB);
 	CURLcode res = curl_easy_perform(curl);
-	if (res != CURLE_OK)
-		//printf("res = %d, data = %s\n",res,data.data);
-	curl_easy_cleanup(curl);
+	if (res != CURLE_OK){
+			 printf("rest_post error: %s\n", curl_easy_strerror(res));
+	}
 	free(post);
 	free(escaped_url);
+	curl_easy_cleanup(curl);
 	return data;
 }
 
@@ -250,12 +255,13 @@ buffer  rest_post_headers (char ** params, char ** headers, char * url){
 	CURLcode res = curl_easy_perform(curl);
 	if (res != CURLE_OK){
 		//TODO: better error handling
-		//printf("res = &d, data = %s\n",res,data.data);
+			 printf("rest_post_headers error: %s\n", curl_easy_strerror(res));
 	}
-	curl_easy_cleanup(curl);
-	curl_slist_free_all(slist);
-	free(--post);
+	post++;
+	free(post);
 	free(escaped_url);
+	curl_slist_free_all(slist);
+	curl_easy_cleanup(curl);
 	return data;
 }
 
@@ -309,11 +315,14 @@ int rest_post_all(rest_args args){
 	}
 	//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 	CURLcode res = curl_easy_perform(curl);
-	curl_easy_cleanup(curl);
+	if (res != CURLE_OK){
+	 	 printf("rest_post_all error: %s\n", curl_easy_strerror(res));
+	}
 	free(post);
 	free(content_type);
 	free(escaped_url);
 	curl_slist_free_all(slist);
+	curl_easy_cleanup(curl);
 	return res;
 }
 
@@ -367,10 +376,13 @@ int rest_put_all(rest_args args, FILE * file){
 
 	//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 	CURLcode res = curl_easy_perform(curl);
-	curl_easy_cleanup(curl);
+	if (res != CURLE_OK){
+	 printf("rest_post_all error: %s\n", curl_easy_strerror(res));
+	}
 	free(content_type);
 	free(full_url);
 	curl_slist_free_all(slist);
+	curl_easy_cleanup(curl);
 	return res;
 }
 
@@ -389,11 +401,12 @@ buffer rest_put_file (char** params, char* url, FILE * in){
 	curl_easy_setopt(curl,CURLOPT_READFUNCTION,ReadFileCB); // for windows
 	CURLcode res = curl_easy_perform(curl);
 	free(full_url);
-	curl_easy_cleanup(curl);
 	if (res != CURLE_OK){
 		//printf("res = %d, data = %.*s\n",res,(int)data.size,data.data);
+	  printf("rest_put_file error: %s\n", curl_easy_strerror(res));
 		data = buffer_free(data);
 	}
+	curl_easy_cleanup(curl);
 	return data;
 }
 
@@ -422,10 +435,11 @@ buffer rest_put_headers (char** params,char** headers, char* url, FILE * in){
 	CURLcode res = curl_easy_perform(curl);
 	free(full_url);
 	curl_slist_free_all(slist);
-	curl_easy_cleanup(curl);
 	if (res != CURLE_OK){
+	  printf("rest_put_headers error: %s\n", curl_easy_strerror(res));
 		//printf("res = %d, data = %.*s\n",res,(int)data.size,data.data);
 		data = buffer_free(data);
 	}
+	curl_easy_cleanup(curl);
 	return data;
 }

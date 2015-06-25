@@ -27,7 +27,7 @@ char * client_secret = "ia87pt0ep6dvb7y";
 char * access_token;
 init_args args;
 utilities utils;
-json_object * config;
+//json_object * config;
 json_object * cache;
 
 #ifndef HAVE_WAIT_H
@@ -60,7 +60,7 @@ char * safe_strdup(const char * str){
 }
 
 void update_cache(json_object * entry,const char *fname){
-  json_object * cfile = utils.getFileCache(PLUGIN_PREFIX,fname);
+  json_object * cfile = json_object_get(utils.getFileCache(PLUGIN_PREFIX,fname));
   if (cfile == NULL)
   cfile = json_object_new_object();
 
@@ -115,14 +115,14 @@ const char * init(init_args a){
   args = a;
   utils = args.utils;
   curl_global_init(CURL_GLOBAL_DEFAULT);
-  config = utils.getConfig(PLUGIN_PREFIX);
+  json_object * config = json_copy(utils.getConfig(PLUGIN_PREFIX), true);
   if (config == NULL){
-    config = json_object_new_object();
+    config = json_object_get(json_object_new_object());
   }
   access_token = safe_strdup(json_get_string(config, "access_token"));
-  FILE * state = fopen("access_token.txt", "r");
+  //FILE * state = fopen("access_token.txt", "r");
   if (access_token == NULL){
-    char  token[128];
+    char token[128];
     char cmd[512];
     sprintf(cmd, "%s \"%s?response_type=code&client_id=%s\" %s",URL_OPEN_CMD,OAUTH_2_AUTH,client_key, SILENT_CMD);
     //printf("go to https://www.dropbox.com/1/oauth2/authorize?response_type=code&client_id=%s and copy the code here\n",client_key);
@@ -138,18 +138,20 @@ const char * init(init_args a){
     if (fgets(token,128,stdin) == NULL) exit(1);
     int len = strlen(token);
     if (token[len-1] == '\n') token[len-1] = '\0';
-    access_token = safe_strdup(db_authorize_token(token,client_key,client_secret));
+    access_token = db_authorize_token(token,client_key,client_secret);
     if (access_token == NULL) exit(1);
     json_object * at = json_object_new_string(access_token);
     args.log(LOGARGS,"config = %s\n",json_object_to_json_string(config));
     json_object_object_add(config, "access_token", at);
     utils.addConfig(PLUGIN_PREFIX, config);
   }
-
+  json_object_put(config);
   return PLUGIN_PREFIX;
 }
 
 void sync_unload(){
+	args.log("dropbox:sync_unload()", 0, "freeing resources");
+	free(access_token);
   curl_global_cleanup();
 }
 
@@ -159,10 +161,11 @@ void sync_listen(int (*cb)(const char*,int)){
   static char * cursor;
   {
     json_object * jcursor;
-    config = utils.getConfig(PLUGIN_PREFIX);
+    json_object * config = json_copy(utils.getConfig(PLUGIN_PREFIX), false);
     if (json_object_object_get_ex(config, "cursor", &jcursor)){
       cursor = strdup(json_object_get_string(jcursor));
     }
+		json_object_put(config);
   }
   args.log(LOGARGS,"cursor=%s\n",cursor);
   bool has_more;
@@ -190,6 +193,7 @@ void sync_listen(int (*cb)(const char*,int)){
       json_object *entries;
       if (!json_object_object_get_ex(delta,"entries",&entries)){
         args.log(LOGARGS,"no delta['entries']\n");
+				json_object_put(delta);
         free(cursor);
         cursor=NULL;
         continue;
@@ -224,7 +228,7 @@ void sync_listen(int (*cb)(const char*,int)){
           cb(path,S_DELETE);
         }
 
-        //json_object_put(entry); // free the entry
+        json_object_put(entry); // free the entry
       }
 
       has_more = JSON_GET_BOOL(delta,"has_more",false);
@@ -236,9 +240,10 @@ void sync_listen(int (*cb)(const char*,int)){
       args.log(LOGARGS,"New Cursor : %s\n\n",new_cursor);
       args.log(LOGARGS,"========================================================\n\n");
 
-      config = utils.getConfig(PLUGIN_PREFIX);
-      json_object_object_add(config, "cursor", json_object_new_string(cursor));
+      json_object * config = json_copy(utils.getConfig(PLUGIN_PREFIX),false);
+			json_add_string(config, "cursor", cursor);
       utils.addConfig(PLUGIN_PREFIX,config);
+			json_object_put(config);
 
       json_object_put(delta);
     } while (has_more);

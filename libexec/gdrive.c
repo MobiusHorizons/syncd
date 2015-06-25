@@ -20,6 +20,7 @@
  */
 
 #include "gdrive.h"
+#include <json-c/json_object_private.h>
 
 bool check_error(json_object* obj);
 char * mkdirP(const char * path);
@@ -50,14 +51,17 @@ json_object * lc_get(){
 }
 
 void lc_addCache(const char * plugin_prefix, const char * fname, json_object * entry){
-    json_object * c = lc_get();
-    if (fname != NULL && strlen(fname) != 0 && entry != NULL){
-        args.log(LOGARGS,"adding cache entry for %s\n", fname);
-        //puts(json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
-        json_object * cache_entry = json_object_get(entry);
-        json_object_object_add(c, fname, cache_entry);
-        //json_object_put(cache_entry);
-    }
+	json_object * c = lc_get();
+	if (fname != NULL && strlen(fname) != 0 && entry != NULL){
+	if (json_object_object_get_ex(c, fname, NULL)){
+	 json_object_object_del(c, fname);
+	}
+	args.log(LOGARGS,"adding cache entry for %s\n", fname);
+	//puts(json_object_to_json_string_ext(entry, JSON_C_TO_STRING_PRETTY));
+	json_object * cache_entry = json_object_get(entry);
+	json_object_object_add(c, fname, cache_entry);
+	json_object_put(cache_entry);
+	}
 }
 
 json_object * lc_getCache(const char * plugin_prefix){
@@ -74,10 +78,10 @@ json_object * lc_getFileCache(const char * plugin_prefix, const char * fname){
     }
 }
 
-int update_cache(const char  * id,
+int gdrive_update_cache(const char  * id,
                  const char  * path,
                  json_object * new_metadata){
-	json_object * old_metadata = utils.getFileCache(PLUGIN_PREFIX, id);
+	  json_object * old_metadata = utils.getFileCache(PLUGIN_PREFIX, id);
     bool is_dir = json_get_bool(new_metadata, "is_dir", false);
     if (old_metadata != NULL){
         long long int old_mtime = json_get_int(old_metadata, "modified", 0);
@@ -87,7 +91,9 @@ int update_cache(const char  * id,
             return 0;
         }
     } else {
-        if (id) utils.addCache(PLUGIN_PREFIX, id, json_object_get(new_metadata));
+        if (id){
+					utils.addCache(PLUGIN_PREFIX, id, json_object_get(new_metadata));
+				}
         if (path){
             char * clean_path = normalize_path(path, is_dir);
             utils.addCache(PLUGIN_PREFIX, clean_path, json_object_get(new_metadata));
@@ -112,10 +118,9 @@ int update_cache(const char  * id,
         return 0;
     }
     json_add_string(new_metadata, "path", path);
-
-       utils.addCache(PLUGIN_PREFIX, path, json_object_get(new_metadata));
-    utils.addCache(PLUGIN_PREFIX, id  , new_metadata);
-    json_object_put(new_metadata);
+    utils.addCache(PLUGIN_PREFIX, path, json_copy(new_metadata, false));
+    utils.addCache(PLUGIN_PREFIX, id  , json_copy(new_metadata, false));
+		json_object_put(new_metadata);
     free(path_from_id);
     return 1;
 }
@@ -331,6 +336,7 @@ const char * init(init_args a){
 
 void sync_unload(){
 	curl_global_cleanup();
+	json_object_put(local_cache);
 	gdrive_cleanup();
 }
 
@@ -346,14 +352,16 @@ void get_updates(int (*cb)(const char*,int)){
 	json_object* lc;
     json_object * aggregate_changes = json_object_new_object();
 
-	json_object* config = utils.getConfig(PLUGIN_PREFIX);
+	json_object* config = json_copy(utils.getConfig(PLUGIN_PREFIX), false);
 	if (!json_object_object_get_ex(config,"largest_change",&lc)){
 		last_change = strdup("0");
 	} else {
 		last_change = strdup(json_object_get_string(lc));
 	}
+	json_object_put(config);
 	if (last_change[0]=='0'){
         first_sync = true;
+		free(last_change);
         last_change = NULL;
     }
 	do {
@@ -376,9 +384,10 @@ void get_updates(int (*cb)(const char*,int)){
             args.log(LOGARGS,"largestchangeID = %ld\n",temp);
             char  largestChangeId[128];
             sprintf(largestChangeId,"%ld",temp+1);
-            config = json_object_get(utils.getConfig(PLUGIN_PREFIX));
+            config = json_copy(utils.getConfig(PLUGIN_PREFIX), true);
             json_object_object_add(config,"largest_change",json_object_new_string(largestChangeId));
             utils.addConfig(PLUGIN_PREFIX,config);
+					  json_object_put(config);
         }
         json_object * items;
         if (json_object_object_get_ex(changes, "items",&items)){
@@ -392,7 +401,7 @@ void get_updates(int (*cb)(const char*,int)){
                     ){
                         if (strcmp(json_get_string(change, "mimeType"), "application/vnd.google-apps.folder") == 0){
                             args.log(LOGARGS,"folder id '%s'\n", id);
-                            update_cache(id, NULL, update_metadata(id,change));
+                            gdrive_update_cache(id, NULL, update_metadata(id,change));
                         }
                 }
             }
@@ -405,9 +414,9 @@ void get_updates(int (*cb)(const char*,int)){
                     !json_get_bool(change,"deleted",false) &&
                     json_object_object_get_ex(change,"file",&change)
                     ){
-                        args.log(LOGARGS,"not deleted\n");
+                        //args.log(LOGARGS,"not deleted\n");
                         bool is_trashed = json_get_bool(change, "explicitlyTrashed", false);
-                        args.log(LOGARGS,"is_trashed = %s\n", is_trashed? "true":"false");
+                        //args.log(LOGARGS,"is_trashed = %s\n", is_trashed? "true":"false");
 
                         bool can_sync = json_object_object_get_ex(change,"downloadUrl", NULL);
                         if (!is_trashed && !can_sync){
@@ -415,7 +424,7 @@ void get_updates(int (*cb)(const char*,int)){
                             continue;
                         }
 
-                        if (update_cache(id, NULL, update_metadata(id,change)) == 0 && !is_trashed){
+                        if (gdrive_update_cache(id, NULL, update_metadata(id, change)) == 0 && !is_trashed){
                             continue;
                         }
 
@@ -443,7 +452,7 @@ void get_updates(int (*cb)(const char*,int)){
                         if (is_trashed){
                             mask = S_DELETE;
                             update_version(id,path);
-                            args.log(LOGARGS,"file '%s' with id '%s' was trashed\n", path, id);
+                            //args.log(LOGARGS,"file '%s' with id '%s' was trashed\n", path, id);
                         }
 
                         char * fullPath = (char *) malloc(PLUGIN_PREFIX_LEN + strlen(path) + 2);

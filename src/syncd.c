@@ -150,20 +150,30 @@ int cb(const char * path, int mask){
 
 			int pd = get_plugin(sync_path[i]);
 			const char * dest_prefix = plugins[pd].prefix;
-			json_object * dest_cache = getFileCache(dest_prefix, sync_path[i] + strlen(dest_prefix));
-			if (dest_cache == NULL) dest_cache = json_object_new_object();
+
+			json_object * dest_cache;
+		  {
+				dest_cache = json_copy(
+					getFileCache(dest_prefix, sync_path[i] + strlen(dest_prefix)),
+				  false
+			  );
+				if (dest_cache == NULL) dest_cache = json_object_new_object();
+		  }
+
 			long long int orig_ver = json_get_int(orig_cache, "version",0);
 
 			logging_log(LOGARGS,"original version = %lld;",orig_ver);
-			if ( json_get_int(dest_cache, "version", -1) >= orig_ver){
+			if ( json_get_int(dest_cache, "version", -1) >= orig_ver ){
 				logging_log(LOGARGS,"destination version = %lld\n",json_get_int(dest_cache, "version",-1));
 				// this file is already in sync
+			  json_object_put(dest_cache);
 				continue;
 			} else {
 				//updateFileCache(plugins[pd].prefix, sync_path[i] + strlen(plugins[pd].prefix),orig_detail);
 				json_object_object_add(dest_cache, "next_version", json_object_new_int64(orig_ver));
 				addCache(dest_prefix, sync_path[i] + strlen(dest_prefix),json_object_get(dest_cache));
 			}
+
 			if ((mask & S_CREATE ) && (mask & S_DIR)){
 				logging_log(LOGARGS,"new dir\n");
 				S_MKDIR sync_mkdir = (S_MKDIR) lt_dlsym(plugins[pd].ptr,"sync_mkdir");
@@ -191,6 +201,7 @@ int cb(const char * path, int mask){
 				S_MV sync_mv = (S_MV) lt_dlsym(plugins[pd].ptr,"sync_mv");
 				logging_log(LOGARGS,"moved file %s to %s, returned %d\n",moved_from[i],sync_path[i],sync_mv(moved_from[i],sync_path[i]));
 			}
+			json_object_put(dest_cache);
 		}
 		if (mask & S_MOVED_TO) moved_from = free_all(moved_from,num_moved_from);
 		sync_path = free_all(sync_path,num_paths);
@@ -200,6 +211,7 @@ int cb(const char * path, int mask){
 
 lt_dlhandle loadPlugin(const char * filename ){
 	const char * ext = strrchr(filename, '.');
+	if (ext == NULL) return NULL; // this cannot be a proper plugin name
 	if(strcmp(ext, PLUGIN_EXT) != 0) return NULL;
 	lt_dlhandle out = lt_dlopen(filename);
 	const char * (*get_prefix)() = (const char * (*)()) lt_dlsym (out, "get_prefix");
@@ -223,6 +235,7 @@ lt_dlhandle loadPlugin(const char * filename ){
 		}
 		logging_log(LOGARGS, "Not loading %.*s plugin from '%s' because it is not referenced in any rule\n", strlen(prefix)-3, prefix, filename);
 	}
+	lt_dlclose(out);
 	return NULL;
 }
 
@@ -239,7 +252,7 @@ int loadPlugins(Plugin **return_plugins){
 	DIR * dp;
 	struct dirent *ep;
   logging_log(LOGARGS,"looking for plugins in %s\n", LIBDIR );
-	dp = opendir(LIBDIR ); //TODO this should pull from config.h
+	dp = opendir(LIBDIR );
 	char configPath[PATH_MAX];
 	strcpy(configPath, getenv("HOME"));
 	strcat(configPath, "/.config/syncd");
@@ -277,6 +290,7 @@ void unloadPlugins(Plugin *plugins, int num){
 	for (i = 0; i < num; i++){
 		S_UNLOAD sync_unload = (S_UNLOAD) lt_dlsym(plugins[i].ptr,"sync_unload");
 		if (sync_unload != NULL) sync_unload();
+	  lt_dlclose(plugins[i].ptr);
 	}
 	free(plugins);
 	lt_dlexit();
@@ -326,7 +340,7 @@ void setupConfig(){
 int main(int argc, char** argv){
 	//LTDL_SET_PRELOADED_SYMBOLS();
 	lt_dlinit();
-	int plugin_to_run = -1;
+	int plugin_to_run = -128;
 	{
 		int opt;
 		while (( opt = getopt(argc,argv,"p:")) != -1){
@@ -343,7 +357,7 @@ int main(int argc, char** argv){
 	num_plugins = loadPlugins(&plugins);
 	logging_stdout("got plugins\n");
 	int i;
-	if (plugin_to_run != -1){
+	if (plugin_to_run > -1 && plugin_to_run < num_plugins){
 		S_LISTEN listen =(S_LISTEN) lt_dlsym(plugins[plugin_to_run].ptr,"sync_listen");
 		json_object_object_foreach(rules,dir,val){
 			if (get_plugin(dir) == plugin_to_run){// get rules specific to this plugin
@@ -352,20 +366,24 @@ int main(int argc, char** argv){
 			}
 		}
 		listen(cb);
-	} else 	for ( i = 0; i < num_plugins; i++){
-		S_LISTEN listen =(S_LISTEN) lt_dlsym(plugins[i].ptr,"sync_listen");
-		int pid = fork();
-		if (pid == 0){ // child
-			json_object_object_foreach(rules,dir,val){
-				if (get_plugin(dir) == i){ // get rules specific to this plugin
-					logging_log(LOGARGS,"dir=%s\n",dir);
-					add_watch(dir);
+	} else if (plugin_to_run == -128){
+		for ( i = 0; i < num_plugins; i++){
+			S_LISTEN listen =(S_LISTEN) lt_dlsym(plugins[i].ptr,"sync_listen");
+			int pid = fork();
+			if (pid == 0){ // child
+				json_object_object_foreach(rules,dir,val){
+					if (get_plugin(dir) == i){ // get rules specific to this plugin
+						logging_log(LOGARGS,"dir=%s\n",dir);
+						add_watch(dir);
+					}
 				}
-			}
-			listen(cb);
-			exit(0);
+				listen(cb);
+		 	}
 		}
 	}
+
+  // cleanup
 	unloadPlugins(plugins,num_plugins);
 	cache_clear();
+	json_object_put(rules);
 }

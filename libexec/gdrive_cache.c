@@ -3,6 +3,7 @@
 #include <libgen.h>
 #include "../libgdrive/gdrive_api.h"
 #include "../src/os.h"
+#include <json-c/json_object_private.h>
 #include <sys/time.h>
 #include <string.h>
 
@@ -66,10 +67,8 @@ json_object * get_metadata(const char* id, const char* path){
 
 
 	json_add_string(file, "path", path);
-
 	utils.addCache(PLUGIN_PREFIX, path, json_object_get(file));
 	utils.addCache(PLUGIN_PREFIX, id  , file);
-
 	json_object_put(file);
 
 	free(id_from_path);
@@ -79,7 +78,7 @@ json_object * get_metadata(const char* id, const char* path){
 
 
 json_object * update_metadata( const char * id, json_object * gdrive_meta){
-    bool free_metadata = false;
+  bool free_metadata = false;
 	while(check_error(gdrive_meta)) {
         gdrive_meta = gdrive_get_metadata(id);
         free_metadata = true;
@@ -96,6 +95,7 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
 	}
 
 	json_object * file = json_object_new_object();
+	args.log(LOGARGS, "update-metadata: refcount %d\n", file->_ref_count);
 	bool is_dir =  strcmp(
 		json_get_string(gdrive_meta,"mimeType"),
 		"application/vnd.google-apps.folder"
@@ -152,44 +152,53 @@ char * normalize_path(const char * path, bool is_dir){
     free(fname);
     return clean_path;
 }
+
 char * get_path(const char * id){
-    bool free_metadata = false;
 	if (id == NULL) return strdup("/");
 	if ( strcmp(id, "root") == 0 ) return strdup("/");
 
-	json_object * file = utils.getFileCache(PLUGIN_PREFIX, id);
+	json_object * file = json_object_get(utils.getFileCache(PLUGIN_PREFIX, id));
 	if (file == NULL) {
-	    file = update_metadata(id, NULL);
-        utils.addCache(PLUGIN_PREFIX, id, file);
-        free_metadata = true;
-    }
-    // #DEBUG
-    //printf("file: \n%s\n", json_object_to_json_string_ext(file, JSON_C_TO_STRING_PRETTY));
-    if (json_get_bool(file, "deleted", false)) return NULL;
-    if (!json_object_object_get_ex(file, "path", NULL)){
-        if (json_get_bool(file, "is_root", false)) return strdup("/");
-        char * parent_id = safe_strdup(json_get_string(file, "parentID"));
-        char * title = safe_strdup(json_get_string(file, "title"));
-        if (title == NULL){ return NULL ;}
-        bool is_dir = json_get_bool(file, "is_dir", false);
-        char * path = get_path(parent_id);
+		file = update_metadata(id, NULL);
+    utils.addCache(PLUGIN_PREFIX, id, json_object_get(file));
+  }
+  // #DEBUG
+  //printf("file: \n%s\n", json_object_to_json_string_ext(file, JSON_C_TO_STRING_PRETTY));
+  if (json_get_bool(file, "deleted", false)) return NULL;
+  if (!json_object_object_get_ex(file, "path", NULL)){
+  	if (json_get_bool(file, "is_root", false)) {
+			json_object_put(file);
+			return strdup("/");
+		}
+    char * parent_id = safe_strdup(json_get_string(file, "parentID"));
+    char * title = safe_strdup(json_get_string(file, "title"));
+    if (title == NULL){
+			json_object_put(file);
+			return NULL;
+		}
+    bool is_dir = json_get_bool(file, "is_dir", false);
+    char * path = get_path(parent_id);
 
-        free(parent_id);
+    free(parent_id);
 
-        if (path == NULL) return NULL; // deleted
+    if (path == NULL) {
+			json_object_put(file);
+			return NULL; // deleted
+		}
 
-        path = (char*) realloc (path, strlen(path) + strlen(title) + 1 + is_dir);
-        strcat(path, title);
-        if (is_dir) strcat(path, "/");
-        free(title);
+    path = (char*) realloc (path, strlen(path) + strlen(title) + 1 + is_dir);
+    strcat(path, title);
+    if (is_dir) strcat(path, "/");
+    free(title);
 
-        // cache this data.
-        get_metadata(id, path);
-        if (free_metadata) json_object_put(file);
-        return path;
-    }
-    if (free_metadata) json_object_put(file);
-    return strdup(json_get_string(file, "path"));
+    // cache this data.
+    get_metadata(id, path);
+    json_object_put(file);
+    return path;
+  }
+  char * path = safe_strdup(json_get_string(file, "path"));
+  json_object_put(file);
+  return path;
 }
 
 char * get_child_id(char * parentId, char * fname){

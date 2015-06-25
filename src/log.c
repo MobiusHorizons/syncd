@@ -63,6 +63,6 @@ void logging_close()
 	dup2(__stdout_fd, fileno(stdout));
 	dup2(__stderr_fd, fileno(stderr));
 
-	close(__stderr_fd);
-	close(__stdout_fd);
+	fclose(__stderr);
+	fclose(__stdout);
 }
