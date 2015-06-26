@@ -31,7 +31,11 @@
 	#include <io.h>
 	#include <fcntl.h>
 	#define pipe(fds) _pipe(fds,4096, _O_BINARY)
-	#define SSL_CERT char SSL_CA_PATH[PATH_MAX]; getcwd(SSL_CA_PATH,PATH_MAX); strcat(SSL_CA_PATH,"\\ca-bundle.crt"); curl_easy_setopt(curl, CURLOPT_CAINFO, SSL_CA_PATH); //printf("SSL_CA_PATH = '%s'\n",SSL_CA_PATH);
+	#define SSL_CERT char SSL_CA_PATH[PATH_MAX];    \
+	 GetModuleFileName(NULL, SSL_CA_PATH, PATH_MAX);\
+	 dirname(SSL_CA_PATH);            \
+	 strcat(SSL_CA_PATH,"\\ca-bundle.crt");         \
+	 curl_easy_setopt(curl, CURLOPT_CAINFO, SSL_CA_PATH); printf("SSL_CA_PATH = '%s'\n",SSL_CA_PATH);
 #else
 	#define SSL_CERT
 //	#define SSL_CERT curl_easy_setopt(curl, CURLOPT_CAPATH, "./ca-bundle.crt");

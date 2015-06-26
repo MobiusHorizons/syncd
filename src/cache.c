@@ -52,7 +52,7 @@ json_object * config;
 char * cacheFile;
 int cacheFD;
 long long int * cacheVersion;
-size_t * cacheLength;
+size_t cacheLength;
 semaphore cache_semaphore;
 semaphore config_semaphore;
 
@@ -65,15 +65,15 @@ void push_cache();
 /* public functions */
 void cache_init(){
     //set up shared memory
-    cacheLength = (size_t *) shared_mem_alloc(sizeof(size_t), "SYNCD\\cache_length");
-    * cacheLength = 10 * 1024 * 1024; // 10 MB for now.
+    //cacheLength = (size_t *) shared_mem_alloc(sizeof(size_t), "SYNCD\\cache_length");
+    cacheLength = 10 * 1024 * 1024; // 10 MB for now.
     char path[PATH_MAX];
     strcpy(path, getenv("HOME"));
     strcat(path, "/.cache/syncd/cache.json");
     int cacheFD = open(path,O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
-    ftruncate(cacheFD,*cacheLength);
+    ftruncate(cacheFD,cacheLength);
     logging_log(LOGARGS,"fd = %d\n",cacheFD);
-    cacheFile = (char *) mmap(NULL, *cacheLength,
+    cacheFile = (char *) mmap(NULL, cacheLength,
             PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, cacheFD, 0);
     if (cacheFile == MAP_FAILED ) errx(1,"failed");
     // setup semaphores.
@@ -82,7 +82,7 @@ void cache_init(){
 }
 
 void cache_clear(){
-    munmap(cacheFile, *cacheLength);
+    munmap(cacheFile, cacheLength);
     close(cacheFD);
 		json_object_put(config);
 	  json_object_put(cache);
@@ -223,7 +223,7 @@ void push_cache(){
     const char * string = "";
     if (cache != NULL ) string = json_object_to_json_string(cache);
     logging_log(LOGARGS,"cache.json length = %d\n",(int)strlen(string));
-    if (strlen(string) > *cacheLength){
+    if (strlen(string) > cacheLength){
         logging_log(LOGARGS,"the string is too long\n");
     }
     semaphore_wait(cache_semaphore);

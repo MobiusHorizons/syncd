@@ -45,6 +45,7 @@ void logging_stdout(const char * fmt, ...)
 	va_start(args, fmt);
 	//vdprintf (__stdout_fd, fmt, args);
 	vfprintf (__stdout, fmt, args);
+	fflush   (__stdout);
 	va_end(args);
 }
 
@@ -53,7 +54,8 @@ void logging_stderr(const char * fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	//vdprintf (__stdout_fd, fmt, args);
-	vfprintf (__stdout, fmt, args);
+	vfprintf (__stderr, fmt, args);
+	fflush   (__stderr);
 	va_end(args);
 }
 
