@@ -118,6 +118,9 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
     modified = mktime(&mod);
     json_add_int(file, "modified", (long long)modified);
   }
+  if (!json_object_object_get_ex(gdrive_meta, "downloadUrl", NULL)){
+    json_add_string(file, "link", json_get_string(gdrive_meta, "alternateLink"));
+  }
 	json_add_bool(file, "is_dir", is_dir);
 	json_add_string(file,"title", json_get_string(gdrive_meta, "title"));
 	json_add_string(file,"id", id);

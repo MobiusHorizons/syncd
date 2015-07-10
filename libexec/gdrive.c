@@ -117,6 +117,10 @@ int gdrive_update_cache(const char  * id,
         json_object_put(new_metadata);
         return 0;
     }
+    if (json_object_object_get_ex(new_metadata, "link", NULL) && !is_dir){
+      path = path_from_id = realloc(path_from_id, strlen(path) + strlen(LINK_EXT) + 1);
+      strcat(path_from_id, LINK_EXT);
+    }
     json_add_string(new_metadata, "path", path);
     utils.addCache(PLUGIN_PREFIX, path, json_copy(new_metadata, false));
     utils.addCache(PLUGIN_PREFIX, id  , json_copy(new_metadata, false));
@@ -417,11 +421,10 @@ void get_updates(int (*cb)(const char*,int)){
                         //args.log(LOGARGS,"not deleted\n");
                         bool is_trashed = json_get_bool(change, "explicitlyTrashed", false);
                         //args.log(LOGARGS,"is_trashed = %s\n", is_trashed? "true":"false");
-
+                        bool is_link = false;
                         bool can_sync = json_object_object_get_ex(change,"downloadUrl", NULL);
+                        char * link_path = NULL;
                         if (!is_trashed && !can_sync){
-                            // this will end up as a link, but for now ignore.
-                            continue;
                         }
 
                         if (gdrive_update_cache(id, NULL, update_metadata(id, change)) == 0 && !is_trashed){
@@ -547,7 +550,7 @@ void watch_dir(const char * path){
 
 /** FILE * sync_open( char * path )
 * opens path for reading, and returns a FILE handle to this resource.
-* this file is not required to be seekable, ie it may be a pipe/stream.
+* this file is not requied to be seekable, ie it may be a pipe/stream.
 */
 
 FILE * sync_open(const char * path){

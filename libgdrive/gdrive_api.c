@@ -2,6 +2,7 @@
 #define  _XOPEN_SOURCE 500
 #include "gdrive_api.h"
 #include <ctype.h>
+#include "links.h"
 #define __GLOBAL_CLIENT_ID 	"969830472849-93kt0dqjevn8jgr3g6erissiocdhk2fo.apps.googleusercontent.com"
 #define __GLOBAL_CLIENT_SECRET	"gcyc89d--P9nUb1KagVeV496"
 
@@ -76,9 +77,26 @@ json_object * gdrive_get_metadata(const char * file_id){
 */
 
 FILE * gdrive_get (const char * file_id){
-    json_object * metadata = gdrive_get_metadata(file_id);
+  json_object * metadata = gdrive_get_metadata(file_id);
 	char * download_url = gdrive_safe_strdup(JSON_GET_STRING(metadata,"downloadUrl"));
-    if (download_url == NULL) return NULL;
+  if (download_url == NULL){
+		printf("%s\n",json_object_to_json_string_ext(metadata, JSON_C_TO_STRING_PRETTY));
+		fflush(stdout);
+		const char * url 		 = JSON_GET_STRING(metadata, "alternateLink");
+		const char * title 	 = JSON_GET_STRING(metadata, "title");
+		const char * iconURL = JSON_GET_STRING(metadata, "iconLink");
+		FILE * link = getLink(title,url,iconURL);
+		json_object_put(metadata);
+		return link;
+		/*
+		json_object * exportLinks;
+		if (json_object_object_get_ex(metadata, "exportLinks",&exportLinks)){
+			download_url = gdrive_safe_strdup(JSON_GET_STRING(exportLinks, "application/pdf"));
+		} else {
+			return NULL;
+		}
+		*/
+	}
     download_url = (char*)realloc(download_url,
         strlen(download_url)
         + strlen("&access_token=")

@@ -7,3 +7,8 @@
 // Set Up Directories
 #define LIBDIR "${PLUGIN_DIR}"
 #define PLUGIN_EXT "${CMAKE_SHARED_MODULE_SUFFIX}"
+
+// Set Up Variables
+#define LINK_EXT ".url"
+#define LINK_TYPE_URL
+
