@@ -37,14 +37,14 @@ void uvfs_updates(uv_fs_event_t *handle, const char *filename, int events, int s
     printf("mask = %X\n",mask);
     if (mask & (S_DIR|S_CREATE|S_CLOSE_WRITE) ){
       printf("adding new directory '%s'",fullname+PLUGIN_PREFIX_LEN);
-      watch_dir(fullname + PLUGIN_PREFIX_LEN);
+      sync_watch_dir(fullname + PLUGIN_PREFIX_LEN);
     }
     update_event(fullname, mask);
   }
   free(fullname);
 }
 
-void add_watch(char * dir_name){
+void fs_add_watch(char * dir_name){
   uv_fs_event_t *fs_event_req = malloc(sizeof(uv_fs_event_t));
   fs_event_req->data = strdup(dir_name);
   uv_fs_event_init(loop, fs_event_req);

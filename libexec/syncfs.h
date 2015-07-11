@@ -35,8 +35,8 @@ init_args args;
 
 
 //Prototypes
-void 	add_watch(char *);
-void 	watch_dir(char *);
+void 	fs_add_watch(char *);
+void 	sync_watch_dir(char *);
 void 	sync_listen(int(*)(const char*,int));
 int 	sync_mkdir(char*);
 int 	update_file_cache(char*,int);

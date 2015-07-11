@@ -317,7 +317,7 @@ void add_watch(char* path){
 	int p = get_plugin(path);
 	logging_log(LOGARGS,"plugin for '%s' is %d\n",path,p);
 	if (p != -1){
-		S_WATCH_DIR watch_dir = (S_WATCH_DIR) lt_dlsym(plugins[p].ptr,"watch_dir");
+		S_WATCH_DIR watch_dir = (S_WATCH_DIR) lt_dlsym(plugins[p].ptr,"sync_watch_dir");
 		watch_dir(path);
 	}
 }

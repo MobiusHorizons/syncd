@@ -162,8 +162,9 @@ unsigned long upload(const char * path, FILE * file){
     id = strdup(json_get_string(response, "id"));
     json_object * cache_entry = update_metadata(id, response);
     json_add_string(cache_entry, "path", path);
-    utils.updateFileCache(PLUGIN_PREFIX, id, json_object_get(cache_entry));
-    utils.updateFileCache(PLUGIN_PREFIX, path, cache_entry);
+    utils.addCache(PLUGIN_PREFIX, id, json_object_get(cache_entry));
+    utils.addCache(PLUGIN_PREFIX, path, json_object_get(cache_entry));
+    json_object_put(cache_entry);
     json_object_put(response);
     free(id);
     free(parentID);
@@ -205,8 +206,9 @@ char * mkdirP(const char * path){
 	json_object_put(metadata);
     json_object * cache_entry = update_metadata(id, response);
     json_add_string(cache_entry, "path", path);
-    utils.updateFileCache(PLUGIN_PREFIX, id, json_object_get(cache_entry));
-    utils.updateFileCache(PLUGIN_PREFIX, path, cache_entry);
+    utils.addCache(PLUGIN_PREFIX, id, json_object_get(cache_entry));
+    utils.addCache(PLUGIN_PREFIX, path, json_object_get(cache_entry));
+    json_object_put(cache_entry);
     json_object_put(response);
     free(parentID);
     free(local_path);
