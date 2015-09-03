@@ -8,18 +8,23 @@ compiler:
 addons:
   apt:
     packages:
-    - libltdl
     - libltdl-dev
     - libtool
+    - libjson-c-dev
+    - libjson-c2
+
+install:
+  - libtoolize -c
+  - cd libltdl
+  - ./configure
+  - make && make install
 
 script:
-  - ls /usr/lib/libltdl*
-  - ls /usr/lib/libcurl*
-  - ls /usr/lib/libjs*
+  - ls /usr/lib64
   - mkdir -p build
   - cd build
   - cmake ..
   - make
-  - sudo make install
+  - make install
 
 #script: ./autogen.sh && ./configure && make
