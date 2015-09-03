@@ -5,11 +5,6 @@
 #  JSONC_LIBRARIES    - List of libraries when using jsonc.
 #  JSONC_FOUND        - True if jsonc found.
 
-if(NOT WIN32)
-   find_package(PkgConfig)
-   pkg_check_modules(PC_JSONC json-c libjson-c)
-   set(JSONC_DEFINITIONS ${PC_JSONC_CFLAGS_OTHER})
-endif(NOT WIN32)
 
 # Look for the header file.
 FIND_PATH(JSONC_INCLUDE_DIR json-c/json.h
@@ -27,19 +22,17 @@ FIND_PATH(JSONC_INCLUDE_DIR json-c/json.h
 MARK_AS_ADVANCED(JSONC_INCLUDE_DIR)
 
 # Look for the library.
-FIND_LIBRARY(JSONC_LIBRARY NAMES json-c libjson-c libjson PATHS
+FIND_LIBRARY(JSONC_LIBRARY NAMES json-c libjson-c libjson libjson PATHS
   $ENV{LIB}
   $ENV{PATH}
   "$ENV{LIB_DIR}/lib"
   /usr/local/lib
   /usr/lib
   /usr/lib/x86_64-linux-gnu
+  /usr/lib/i386-linux-gnu
   c:/msys/lib
   /usr/x86_64-w64-mingw32/lib
   /usr/i686-w64-mingw32/lib
-  HINTS
-  ${PC_JSONC_LIBDIR}
-  ${PC_JSONC_LIBRARY_DIRS}
   NO_DEFAULT_PATH
   )
 
