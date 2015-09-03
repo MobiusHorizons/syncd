@@ -16,7 +16,7 @@ script:
   - ls -r $HOME/jsonc
   - export INCLUDE="$HOME/jsonc/include"
   - export LIB="$HOME/jsonc/lib"
-  - export CFLAGS="-L$HOME/jsonc/lib -I$HOME/jsonc/include"
+  - export CFLAGS="$CFLAGS -fPIC"
   - mkdir -p build
   - cd build
   - cmake ..
