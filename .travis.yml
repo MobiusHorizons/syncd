@@ -8,6 +8,7 @@ cache:
 compiler:
   - gcc
   - clang
+  - tcc
 
 install:
   - sh ./install_jsonc.sh
