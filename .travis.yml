@@ -1,5 +1,9 @@
 language: c
 
+compiler:
+  - gcc
+  - clang
+  
 stript:
   - mkdir -p build
   - cd build
