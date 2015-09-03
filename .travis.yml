@@ -1,31 +1,25 @@
 language: c
-sudo: required
+
+sudo: false
+
+cache:
+  directories: $HOME/jsonc
 
 compiler:
   - gcc
   - clang
 
-addons:
-  apt:
-    packages:
-    - libltdl-dev
-
 install:
-  - cd ..
-  - wget https://github.com/json-c/json-c/archive/json-c-0.12-20140410.tar.gz
-  - tar -xzvf json-c-0.12-20140410.tar.gz
-  - cd json-c-json-c-0.12-20140410
-  - ./configure --prefix=/usr
-  - CFLAGS="-Wno-error=unused-but-set-variable" make
-  - sudo make install
-  - cd ../syncd
+  - sh ./install_jsonc.sh
 
 script:
-  - ls /usr/lib/*-linux-gnu
+  - ls -r $HOME/jsonc
+  - export INCLUDE="$HOME/jsonc/include"
+  - export LIB="$HOME/jsonc/lib"
+  - export CFLAGS="-L$HOME/jsonc/lib -I$HOME/jsonc/include"
   - mkdir -p build
   - cd build
   - cmake ..
   - make
-  - make install
 
 #script: ./autogen.sh && ./configure && make
