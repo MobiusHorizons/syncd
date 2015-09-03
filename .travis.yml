@@ -12,12 +12,14 @@ addons:
     - libjson0-dev
 
 install:
+  - cd ..
   - wget https://github.com/json-c/json-c/archive/json-c-0.12-20140410.tar.gz
   - tar -xzvf json-c-0.12-20140410.tar.gz
   - cd json-c-json-c-0.12-20140410
   - ./configure --prefix=/usr
   - CC="-Wno-error=unused-but-set-variable" make
   - sudo make install
+  - cd ../syncd
 
 script:
   - ls /usr/lib/*-linux-gnu
