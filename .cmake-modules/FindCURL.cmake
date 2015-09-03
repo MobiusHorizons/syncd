@@ -9,7 +9,7 @@
 # in the FIND_PATH() and FIND_LIBRARY() calls
 if(NOT WIN32)
    find_package(PkgConfig)
-   pkg_check_modules(PC_CURL curl)
+   pkg_check_modules(PC_CURL libcurl)
    set(CURL_DEFINITIONS ${PC_CURL_CFLAGS_OTHER})
 endif(NOT WIN32)
 
