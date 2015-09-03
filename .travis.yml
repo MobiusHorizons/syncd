@@ -5,6 +5,7 @@ compiler:
   - clang
   
 stript:
+  - ./autogen.sh
   - mkdir -p build
   - cd build
   - cmake ..
