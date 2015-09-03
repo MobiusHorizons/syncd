@@ -1,6 +1,6 @@
-#!bin/sh
+#!/bin/sh
 set -e
-if [! -d "$HOME/jsonc/lib" ]; then
+if [ ! -d "$HOME/jsonc/lib" ]; then
   cd ..
   wget https://github.com/json-c/json-c/archive/json-c-0.12-20140410.tar.gz
   tar -xzvf json-c-0.12-20140410.tar.gz
