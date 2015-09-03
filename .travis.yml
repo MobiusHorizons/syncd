@@ -7,9 +7,13 @@ compiler:
 addons:
   apt:
     packages:
+    - libltdl
     - libltdl-dev
   
 script:
+  - ls /usr/lib/libltdl*
+  - ls /usr/lib/libcurl*
+  - ls /usr/lib/libjs*
   - mkdir -p build
   - cd build
   - cmake ..
