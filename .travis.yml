@@ -8,16 +8,17 @@ compiler:
 addons:
   apt:
     packages:
+    - libltdl7
     - libltdl-dev
     - libtool
-    - libjson-c-dev
-    - libjson-c2
+    - libjson0
+    - libjson0-dev
 
-install:
-  - libtoolize -c
-  - cd libltdl
-  - ./configure
-  - make && make install
+#install:
+#  - libtoolize -c
+#  - cd libltdl
+#  - ./configure
+#  - make && make install
 
 script:
   - ls /usr/lib64
