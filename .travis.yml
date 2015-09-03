@@ -1,5 +1,5 @@
 language: c
-sudo: false
+sudo: required
 
 compiler:
   - gcc
@@ -15,9 +15,9 @@ install:
   - wget https://github.com/json-c/json-c/archive/json-c-0.12-20140410.tar.gz
   - tar -xzvf json-c-0.12-20140410.tar.gz
   - cd json-c-json-c-0.12-20140410
-  - ./configure
+  - ./configure --prefix=/usr
   - CC="-Wno-error=unused-but-set-variable" make
-  - make install
+  - sudo make install
 
 script:
   - ls /usr/lib/*-linux-gnu
