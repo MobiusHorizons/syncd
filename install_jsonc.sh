@@ -6,7 +6,7 @@ if [ ! -d "$HOME/jsonc/lib" ]; then
   tar -xzvf json-c-0.12-20140410.tar.gz
   cd json-c-json-c-0.12-20140410
   CC="clang"
-  export CCFLAGS="-Wno-error=unused-but-set-variable"
+  export CFLAGS="-Wno-error=unused-but-set-variable"
   ./configure --prefix=$HOME/jsonc
   make
   make install
