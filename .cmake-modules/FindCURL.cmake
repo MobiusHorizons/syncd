@@ -5,6 +5,14 @@
 #  CURL_LIBRARIES    - List of libraries when using curl.
 #  CURL_FOUND        - True if curl found.
 
+# use pkg-config to get the directories and then use these values
+# in the FIND_PATH() and FIND_LIBRARY() calls
+if(NOT WIN32)
+   find_package(PkgConfig)
+   pkg_check_modules(PC_CURL curl)
+   set(CURL_DEFINITIONS ${PC_CURL_CFLAGS_OTHER})
+endif(NOT WIN32)
+
 # Look for the header file.
 FIND_PATH(CURL_INCLUDE_DIR curl/curl.h
   $ENV{INCLUDE}
@@ -22,7 +30,7 @@ FIND_PATH(CURL_INCLUDE_DIR curl/curl.h
 MARK_AS_ADVANCED(CURL_INCLUDE_DIR)
 
 # Look for the library.
-FIND_LIBRARY(CURL_LIBRARY NAMES curl libcurl_imp PATHS
+find_library(CURL_LIBRARY NAMES curl libcurl_imp PATHS
   $ENV{LIB}
   "$ENV{LIB_DIR}/lib"
   /usr/local/lib
@@ -31,6 +39,9 @@ FIND_LIBRARY(CURL_LIBRARY NAMES curl libcurl_imp PATHS
   c:/msys/lib
   /usr/x86_64-w64-mingw32/lib
   /usr/i686-w64-mingw32/lib
+  HINTS
+  ${PC_CURL_LIBDIR}
+  ${PC_CURL_LIBRARY_DIRS}
   NO_DEFAULT_PATH
   )
 
