@@ -1,4 +1,5 @@
 language: c
+sudo: false
 
 compiler:
   - gcc
@@ -9,7 +10,8 @@ addons:
     packages:
     - libltdl
     - libltdl-dev
-  
+    - libtool
+
 script:
   - ls /usr/lib/libltdl*
   - ls /usr/lib/libcurl*
@@ -20,4 +22,4 @@ script:
   - make
   - sudo make install
 
-#script: ./autogen.sh && ./configure && make 
+#script: ./autogen.sh && ./configure && make

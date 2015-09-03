@@ -5,6 +5,14 @@
 #  LTDL_LIBRARIES    - List of libraries when using curl.
 #  LTDL_FOUND        - True if curl found.
 
+# use pkg-config to get the directories and then use these values
+# in the FIND_PATH() and FIND_LIBRARY() calls
+if(NOT WIN32)
+   find_package(PkgConfig)
+   pkg_check_modules(PC_LTDL libcurl)
+   set(LTDL_DEFINITIONS ${PC_LTDL_CFLAGS_OTHER})
+endif(NOT WIN32)
+s
 # Look for the header file.
 FIND_PATH(LTDL_INCLUDE_DIR ltdl.h
   $ENV{INCLUDE}
@@ -30,6 +38,9 @@ FIND_LIBRARY(LTDL_LIBRARY NAMES ltdl libltdl PATHS
   c:/msys/bin
   /usr/x86_64-w64-mingw32/lib
   /usr/i686-w64-mingw32/lib
+  HINTS
+  ${PC_LTDL_LIBDIR}
+  ${PC_LTDL_LIBRARY_DIRS}
   NO_DEFAULT_PATH
   )
 

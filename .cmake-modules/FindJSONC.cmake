@@ -1,9 +1,15 @@
 # - Find json-c
 # Find the native JSONC headers and libraries.
 #
-#  JSONC_INCLUDE_DIRS - where to find curl/curl.h, etc.
-#  JSONC_LIBRARIES    - List of libraries when using curl.
-#  JSONC_FOUND        - True if curl found.
+#  JSONC_INCLUDE_DIRS - where to find jsonc/jsonc.h, etc.
+#  JSONC_LIBRARIES    - List of libraries when using jsonc.
+#  JSONC_FOUND        - True if jsonc found.
+
+if(NOT WIN32)
+   find_package(PkgConfig)
+   pkg_check_modules(PC_JSONC json-c)
+   set(JSONC_DEFINITIONS ${PC_JSONC_CFLAGS_OTHER})
+endif(NOT WIN32)
 
 # Look for the header file.
 FIND_PATH(JSONC_INCLUDE_DIR json-c/json.h
@@ -30,6 +36,9 @@ FIND_LIBRARY(JSONC_LIBRARY NAMES json-c libjson-c PATHS
   c:/msys/lib
   /usr/x86_64-w64-mingw32/lib
   /usr/i686-w64-mingw32/lib
+  HINTS
+  ${PC_JSONC_LIBDIR}
+  ${PC_JSONC_LIBRARY_DIRS}
   NO_DEFAULT_PATH
   )
 
