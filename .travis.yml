@@ -15,7 +15,9 @@ install:
   - wget https://github.com/json-c/json-c/archive/json-c-0.12-20140410.tar.gz
   - tar -xzvf json-c-0.12-20140410.tar.gz
   - cd json-c-json-c-0.12-20140410
-  - ./configure && make && make install
+  - ./configure
+  - CC="-Wno-error=unused-but-set-variable" make
+  - make install
 
 script:
   - ls /usr/lib/*-linux-gnu
