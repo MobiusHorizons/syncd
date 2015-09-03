@@ -27,12 +27,13 @@ FIND_PATH(JSONC_INCLUDE_DIR json-c/json.h
 MARK_AS_ADVANCED(JSONC_INCLUDE_DIR)
 
 # Look for the library.
-FIND_LIBRARY(JSONC_LIBRARY NAMES json-c libjson-c PATHS
+FIND_LIBRARY(JSONC_LIBRARY NAMES json-c libjson-c libjson PATHS
   $ENV{LIB}
   $ENV{PATH}
   "$ENV{LIB_DIR}/lib"
   /usr/local/lib
   /usr/lib
+  /usr/lib/x86_64-linux-gnu
   c:/msys/lib
   /usr/x86_64-w64-mingw32/lib
   /usr/i686-w64-mingw32/lib
