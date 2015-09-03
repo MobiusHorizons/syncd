@@ -12,7 +12,7 @@ compiler:
   - pcc
 
 env:
-  - PATH="$HOME/pcc/bin:$PATH"
+  - PATH="$HOME/pcc/bin:$PATH" CFLAGS="-L$HOME/pcc/lib -Wl,-rpath=$HOME/pcc/lib"
 
 install:
   - sh ./install_jsonc.sh
