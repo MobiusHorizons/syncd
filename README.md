@@ -1,5 +1,7 @@
-syncd
+syncd  
 =====
+
+ [![Build Status](https://travis-ci.org/MobiusHorizons/syncd.svg?branch=cmake)](https://travis-ci.org/MobiusHorizons/syncd)
 
 Synchronization service for linux with plugins for various endpoints hopefully dropbox, Google Drive, etc
 
