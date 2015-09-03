@@ -1,4 +1,5 @@
 include_directories("${CMAKE_ROOT}")
+set(POSITION_INDEPENDENT_CODE TRUE)
 
 #add_executable(gdrive_main gdrive_main.c gdrive_api.c)
 #target_link_libraries(gdrive_main LINK_PRIVATE rest ${JSONC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

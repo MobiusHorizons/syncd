@@ -1,4 +1,5 @@
 find_package(CURL)
+set(POSITION_INDEPENDENT_CODE TRUE)
 
 include_directories(${CURL_INCLUDE_DIRS})
 add_library(rest rest.c buffer.c)
