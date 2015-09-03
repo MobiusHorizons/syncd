@@ -4,5 +4,5 @@ include_directories("${CMAKE_ROOT}")
 #target_link_libraries(dropbox_main LINK_PRIVATE rest ${JSONC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} )
 
 add_library(dropbox dropbox_api.c)
-set_property(TARGET dropbox PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_target_properties(dropbox PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dropbox LINK_PRIVATE rest ${JSONC_LIBRARIES})
