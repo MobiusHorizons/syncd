@@ -33,6 +33,7 @@ FIND_LIBRARY(LTDL_LIBRARY NAMES ltdl libltdl PATHS
   $ENV{LIB}
   "$ENV{LIB_DIR}/lib"
   /usr/local/lib
+  /usr/lib/x86_64-linux-gnu
   /usr/lib
   c:/msys/lib
   c:/msys/bin
