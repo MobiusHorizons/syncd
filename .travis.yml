@@ -4,14 +4,19 @@ sudo: false
 
 cache:
   directories: $HOME/jsonc
+  directories: $HOME/pcc
 
 compiler:
   - gcc
   - clang
   - pcc
 
+env:
+  - PATH="$HOME/pcc/bin:$PATH"
+
 install:
   - sh ./install_jsonc.sh
+  - sh ./install_pcc.sh
 
 script:
   - ls -r $HOME/jsonc
