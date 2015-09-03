@@ -4,9 +4,11 @@ compiler:
   - gcc
   - clang
   
-script:
-  - mkdir -p build
-  - cd build
-  - cmake ..
-  - make
-  - sudo make install
+#script:
+#  - mkdir -p build
+#  - cd build
+#  - cmake ..
+#  - make
+#  - sudo make install
+
+script: ./autogen.sh && ./configure && make 
