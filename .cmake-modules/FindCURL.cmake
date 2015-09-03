@@ -27,6 +27,7 @@ FIND_LIBRARY(CURL_LIBRARY NAMES curl libcurl_imp PATHS
   "$ENV{LIB_DIR}/lib"
   /usr/local/lib
   /usr/lib
+  /usr/lib64
   c:/msys/lib
   /usr/x86_64-w64-mingw32/lib
   /usr/i686-w64-mingw32/lib
