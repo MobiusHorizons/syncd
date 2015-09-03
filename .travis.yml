@@ -9,7 +9,6 @@ addons:
   apt:
     packages:
     - libltdl-dev
-    - libjson0-dev
 
 install:
   - cd ..
@@ -17,7 +16,7 @@ install:
   - tar -xzvf json-c-0.12-20140410.tar.gz
   - cd json-c-json-c-0.12-20140410
   - ./configure --prefix=/usr
-  - CC="-Wno-error=unused-but-set-variable" make
+  - CFLAGS="-Wno-error=unused-but-set-variable" make
   - sudo make install
   - cd ../syncd
 
