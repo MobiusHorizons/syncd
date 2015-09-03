@@ -7,7 +7,7 @@
 
 if(NOT WIN32)
    find_package(PkgConfig)
-   pkg_check_modules(PC_JSONC json-c)
+   pkg_check_modules(PC_JSONC json-c libjson-c)
    set(JSONC_DEFINITIONS ${PC_JSONC_CFLAGS_OTHER})
 endif(NOT WIN32)
 

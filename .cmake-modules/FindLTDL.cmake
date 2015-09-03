@@ -1,5 +1,5 @@
 # - Find libltdl
-# Find the native UV headers and libraries.
+# Find the native ltdl headers and libraries.
 #
 #  LTDL_INCLUDE_DIRS - where to find ltdl.h, etc.
 #  LTDL_LIBRARIES    - List of libraries when using curl.
@@ -9,10 +9,10 @@
 # in the FIND_PATH() and FIND_LIBRARY() calls
 if(NOT WIN32)
    find_package(PkgConfig)
-   pkg_check_modules(PC_LTDL libcurl)
+   pkg_check_modules(PC_LTDL ltdl)
    set(LTDL_DEFINITIONS ${PC_LTDL_CFLAGS_OTHER})
 endif(NOT WIN32)
-s
+
 # Look for the header file.
 FIND_PATH(LTDL_INCLUDE_DIR ltdl.h
   $ENV{INCLUDE}
