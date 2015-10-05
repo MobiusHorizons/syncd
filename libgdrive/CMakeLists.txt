@@ -4,5 +4,5 @@ include_directories("${CMAKE_ROOT}")
 #target_link_libraries(gdrive_main LINK_PRIVATE rest ${JSONC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 add_library(gdrive gdrive_api.c)
-set_property(TARGET gdrive PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET gdrive PROPERTY POSITION_INDEPENDENT_CODE True)
 target_link_libraries(gdrive LINK_PRIVATE rest ${JSONC_LIBRARIES})

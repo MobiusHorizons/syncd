@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
-#include "ipc_semaphore.h"
+#include "lock.h"
 #include "shared_memory.h"
 #include "log.h"
 #include <config.h>
@@ -51,10 +51,12 @@ json_object * config;
 
 char * cacheFile;
 int cacheFD;
+int configFD;
+
 long long int * cacheVersion;
 size_t cacheLength;
-semaphore cache_semaphore;
-semaphore config_semaphore;
+syncd_lock cache_lock;
+syncd_lock config_lock;
 
 /* definition of local utility functions */
 void update_cache();
@@ -68,17 +70,22 @@ void cache_init(){
     //cacheLength = (size_t *) shared_mem_alloc(sizeof(size_t), "SYNCD\\cache_length");
     cacheLength = 10 * 1024 * 1024; // 10 MB for now.
     char path[PATH_MAX];
-    strcpy(path, getenv("HOME"));
+
+	  strcpy(path, getenv("HOME"));
     strcat(path, "/.cache/syncd/cache.json");
     int cacheFD = open(path,O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
+    cache_lock  = syncd_lock_create(path, cacheFD);
     ftruncate(cacheFD,cacheLength);
     logging_log(LOGARGS,"fd = %d\n",cacheFD);
     cacheFile = (char *) mmap(NULL, cacheLength,
             PROT_READ | PROT_WRITE, MAP_FILE|MAP_SHARED, cacheFD, 0);
     if (cacheFile == MAP_FAILED ) errx(1,"failed");
-    // setup semaphores.
-    cache_semaphore  = semaphore_create(1, "SYNCD\\cache" );
-    config_semaphore = semaphore_create(1, "SYNCD\\config");
+
+
+	  strcpy(path, getenv("HOME"));
+    strcat(path, "/.cache/syncd/config.json");
+    int configFD = open(path,O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
+    config_lock  = syncd_lock_create(path, configFD);
 }
 
 void cache_clear(){
@@ -86,8 +93,8 @@ void cache_clear(){
     close(cacheFD);
 		json_object_put(config);
 	  json_object_put(cache);
-    semaphore_delete(cache_semaphore , "SYNCD\\cache" );
-    semaphore_delete(config_semaphore, "SYNCD\\config");
+    syncd_lock_delete(cache_lock );
+    syncd_lock_delete(config_lock);
 }
 
 json_object * getCache(const char * plugin_prefix){
@@ -192,9 +199,9 @@ utilities get_utility_functions(){
 
 void update_cache(){
     if (cache != NULL) json_object_put(cache);
-    semaphore_wait(cache_semaphore);
+    syncd_lock_wait(cache_lock, lock_shared);
     cache = json_tokener_parse(cacheFile);
-    semaphore_post(cache_semaphore);
+    syncd_lock_release(cache_lock, lock_shared);
 
     // cache = json_object_from_file("cache.json");
     if (cache == NULL){
@@ -208,9 +215,9 @@ void update_config(){
     strcpy(path,getenv("HOME"));
     strcat(path,"/.config/syncd/config.json");
 
-    semaphore_wait(config_semaphore);
+    syncd_lock_wait(config_lock, lock_shared);
     config = json_object_from_file(path);
-    semaphore_post(config_semaphore);
+    syncd_lock_release(config_lock, lock_shared);
 
     if (config == NULL){
         config = json_object_new_object();
@@ -226,10 +233,10 @@ void push_cache(){
     if (strlen(string) > cacheLength){
         logging_log(LOGARGS,"the string is too long\n");
     }
-    semaphore_wait(cache_semaphore);
+    syncd_lock_wait(cache_lock, lock_exclusive);
     memcpy(cacheFile, string, strlen(string));
     msync(cacheFile,strlen(string),MS_SYNC|MS_INVALIDATE);
-    semaphore_post(cache_semaphore);
+    syncd_lock_release(cache_lock, lock_exclusive);
     logging_log(LOGARGS,"cache pushed\n");
 }
 
@@ -237,7 +244,7 @@ void push_config(){
     char path[PATH_MAX];
     strcpy(path,getenv("HOME"));
     strcat(path,"/.config/syncd/config.json");
-    semaphore_wait(config_semaphore);
+    syncd_lock_wait(config_lock, lock_exclusive);
     json_object_to_file(path,config);
-    semaphore_post(config_semaphore);
+    syncd_lock_release(config_lock, lock_exclusive);
 }

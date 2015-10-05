@@ -2,7 +2,7 @@ find_package(CURL)
 
 include_directories(${CURL_INCLUDE_DIRS})
 add_library(rest rest.c buffer.c)
-set_property(TARGET rest PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET rest PROPERTY POSITION_INDEPENDENT_CODE True)
 target_link_libraries(rest LINK_PUBLIC ${CURL_LIBRARIES})
 
 if(WIN32)

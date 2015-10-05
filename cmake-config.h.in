@@ -3,6 +3,10 @@
 #cmakedefine HAVE_ERR_H 1
 #cmakedefine HAVE_FORK 1
 #cmakedefine HAVE_WAIT_H 1
+#cmakedefine HAVE_FLOCK 1
+
+#cmakedefine USE_FLOCK_LK ${USE_FLOCK_LK}
+#cmakedefine USE_SEMAPHORE_LK ${USE_SEMAPHORE_LK}
 
 // Set Up Directories
 #define LIBDIR "${PLUGIN_DIR}"
