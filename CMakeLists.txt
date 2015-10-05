@@ -16,9 +16,11 @@ check_include_files("sys/inotify.h" HAVE_INOTIFY_H)
 check_include_files("err.h" HAVE_ERR_H)
 check_include_files("sys/wait.h" HAVE_WAIT_H)
 check_function_exists(fork HAVE_FORK)
+check_function_exists(flock HAVE_FLOCK)
 
 include_directories("${CMAKE_BINARY_DIR}")
 include_directories("${CMAKE_CURRENT_LIST_DIR}")
+
 
 set(PLUGIN_DIR "${CMAKE_INSTALL_PREFIX}/lib/syncd/plugins")
 add_subdirectory(librest)
