@@ -12,6 +12,8 @@ FIND_PATH(JSONC_INCLUDE_DIR json-c/json.h
   "$ENV{LIB_DIR}/include"
   /usr/local/include
   /usr/include
+  #homebrew on macs
+  /usr/local/opt/json-c/include
   #mingw
   c:/msys/include
   /usr/x86_64-w64-mingw32/include
@@ -30,6 +32,7 @@ FIND_LIBRARY(JSONC_LIBRARY NAMES json-c libjson-c PATHS
   /usr/lib
   /usr/lib/x86_64-linux-gnu
   /usr/lib/i386-linux-gnu
+  /usr/local/opt/json-c/lib
   c:/msys/lib
   /usr/x86_64-w64-mingw32/lib
   /usr/i686-w64-mingw32/lib

@@ -19,6 +19,8 @@ FIND_PATH(CURL_INCLUDE_DIR curl/curl.h
   "$ENV{LIB_DIR}/include"
   /usr/local/include
   /usr/include
+  #homebrew on macs
+  /usr/local/opt/curl/include
   #mingw
   c:/msys/include
   c:/msys/bin
@@ -36,6 +38,8 @@ find_library(CURL_LIBRARY NAMES curl libcurl_imp PATHS
   /usr/local/lib
   /usr/lib
   /usr/lib64
+  #homebrew on macs
+  /usr/local/opt/curl/lib
   c:/msys/lib
   /usr/x86_64-w64-mingw32/lib
   /usr/i686-w64-mingw32/lib
