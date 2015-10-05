@@ -334,13 +334,23 @@ void setupConfig(){
 	// Create the directories if needed.
 	char path [PATH_MAX];
 	strcpy(path, getenv("HOME"));
-	strcat(path, "/.config/syncd");
+	
+	strcat(path, "/.config");
 	c_mkdir(path,0700);
+	
+	strcat(path, "/syncd");
+	c_mkdir(path,0700);
+	
 	strcat(path,"/log.txt");
 	logging_init(path);
+
 	strcpy(path, getenv("HOME"));
-	strcat(path, "/.cache/syncd");
+	strcat(path, "/.cache");
 	c_mkdir(path,0700);
+
+	strcat(path, "/syncd");
+	c_mkdir(path,0700);
+	
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/.config/syncd/rules.json");
 	rules = json_object_from_file(path);
