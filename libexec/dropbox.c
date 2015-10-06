@@ -268,7 +268,7 @@ void do_poll(int interval){
 }
 
 
-void watch_dir(const char* path){
+void sync_watch_dir(const char* path){
   args.log(LOGARGS,"i am supposed to be monitoring directory %s\n",path);
 }
 

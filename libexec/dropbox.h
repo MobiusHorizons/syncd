@@ -37,7 +37,7 @@ FILE *       EXPORT_SHARED sync_open       (const char*             );
 int          EXPORT_SHARED sync_write      (const char*,FILE *      );
 int          EXPORT_SHARED sync_rm         (const char*             );
 int          EXPORT_SHARED sync_mv         (const char*,const char* );
-void         EXPORT_SHARED watch_dir       (const char*             );
+void         EXPORT_SHARED sync_watch_dir  (const char*             );
 int          EXPORT_SHARED sync_mkdir      (const char*             );
 void         EXPORT_SHARED sync_unload     (                        );
 const char * EXPORT_SHARED get_prefix      (                        );
