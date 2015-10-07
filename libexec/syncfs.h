@@ -10,6 +10,7 @@
 #include <stdint.h>
 #undef _XOPEN_SOURCE
 #include <string.h>
+#include <strings.h>
 #undef PLUGIN_PREFIX
 #include <src/plugin.h>
 /* "readdir" etc. are defined here. */

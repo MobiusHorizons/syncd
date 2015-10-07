@@ -20,6 +20,7 @@
  */
 
 #include "gdrive.h"
+#include <deps/strdup/strdup.h>
 #include <json-c/json_object_private.h>
 
 bool check_error(json_object* obj);
@@ -543,7 +544,7 @@ void sync_listen( int (*call_back)(const char*path,int type)){
 * adds path to be watched for changes the plugin should only report changes
 * that occur in watched directories.
 */
-void watch_dir(const char * path){
+void sync_watch_dir(const char * path){
 
 }
 

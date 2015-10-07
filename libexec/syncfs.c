@@ -19,6 +19,8 @@
  * THE SOFTWARE.
  */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include "syncfs.h"
 
 FILE ** open_files;

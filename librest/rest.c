@@ -282,13 +282,15 @@ int rest_post_all(rest_args args){
 		int len = 0;
 		int n = 0;
 		while (args.params[n] != NULL)  len += strlen(args.params[n++]) + 1;
-		post = malloc(len);
-		post[0] = '\0';
-		for (i = 0; i < n; i++){
-			strcat(post,args.params[i]);
-			if (i < n-1) strcat(post,"&");
-		}
-		curl_easy_setopt(curl,CURLOPT_POSTFIELDS,post);
+        if (len > 0){
+            post = malloc(len);
+            post[0] = '\0';
+            for (i = 0; i < n; i++){
+                strcat(post,args.params[i]);
+                if (i < n-1) strcat(post,"&");
+            }
+            curl_easy_setopt(curl,CURLOPT_POSTFIELDS,post);
+        }
 	}
 	if (args.content != NULL){
 		curl_easy_setopt(curl,CURLOPT_POSTFIELDS,args.content->data);

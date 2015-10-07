@@ -20,6 +20,7 @@
  */
 
 #include <sys/inotify.h>
+#include <deps/strdup/strdup.h>
 #include "syncfs.h"
 
 static int inotify_fd;
