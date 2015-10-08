@@ -113,7 +113,7 @@ json_object * gdrive_get_changes(const char* pageToken,const char*startChangeId,
     rest_build_param(&params[i++], "includeDeleted", includeDeleted?"true":"false");
     rest_build_param(&params[i++], "includeSubscribed", includeSubscribed?"true":"false");
 	params[i] = NULL;
-	i = 0;
+    // i = 0;
 	//while ( params[i] != NULL){
 	//	printf("%s&",params[i++]);
 	//}
@@ -207,7 +207,9 @@ json_object * gdrive_files_put(const char * path, FILE * file){
 	//	printf("id = '%s'\n",dir);
 		parent_id = json_object_new_string(dir==NULL?"root":dir);
 		fname = p;
-	}
+    } else {
+        fprintf(stderr, "ERROR uploading file: Invalid Path '%s'", path);
+    }
 	strcpy(bearer,"Bearer "); strcat(bearer,KEY);
 	rest_build_header(&headers[0],"Authorization", bearer);
 	free(bearer);
@@ -249,7 +251,8 @@ json_object * gdrive_files_put(const char * path, FILE * file){
 	args.content = &data;
 	args.return_headers = return_headers;
 
-	int resp = rest_post_all(args);
+	/*int resp = */rest_post_all(args);
+	// TODO: add error handling for failed post
 	char * upload_url = return_headers[1] + strlen("Location: ");
   //  printf("url = '%s'\n",upload_url);
     {
@@ -402,7 +405,7 @@ json_object * gdrive_files_list(char * query, int pageToken){
 
 	buffer resp = rest_get_buffer(params,"https://www.googleapis.com/drive/v2/files");
 	json_object * response = json_tokener_parse(resp.data);
-	resp = buffer_free(resp);
+	buffer_free(resp);
 /*	json_object * list = json_object_object_get(response,"items");
 	for (i = 0; i < json_object_array_length(list); i++){
 		const char * folder_id = JSON_GET_STRING(json_object_array_get_idx(list,i),"id");
@@ -464,7 +467,7 @@ json_object * gdrive_files_list_children(char * id, int pageToken){
 	for (i = 0; i < json_object_array_length(list); i++){
 		const char * folder_id = JSON_GET_STRING(json_object_array_get_idx(list,i),"id");
 		if (folder_id != NULL){
-			json_object * metadata = gdrive_get_metadata(folder_id);
+			//json_object * metadata = gdrive_get_metadata(folder_id);
 		/*printf ("%s%s => %s\n",
 				JSON_GET_STRING(metadata,"title"),
 				(strcmp
@@ -478,7 +481,7 @@ json_object * gdrive_files_list_children(char * id, int pageToken){
 		}
 	}
 
-	resp = buffer_free(resp);
+	buffer_free(resp);
 	free(params[0]);
 	free(url);
 	//free(params[1]);

@@ -20,6 +20,7 @@
  */
 
 #include "syncfs.h"
+#include <deps/strdup/strdup.h>
 #include <uv.h>
 
 uv_loop_t *loop;
@@ -44,20 +45,32 @@ void uvfs_updates(uv_fs_event_t *handle, const char *filename, int events, int s
   free(fullname);
 }
 
-void fs_add_watch(char * dir_name){
+// using ABI for libuv 1.x
+#if UV_VERSION_MAJOR == 1
+void fs_add_watch(char* dir_name){
   uv_fs_event_t *fs_event_req = malloc(sizeof(uv_fs_event_t));
   fs_event_req->data = strdup(dir_name);
   uv_fs_event_init(loop, fs_event_req);
   uv_fs_event_start(fs_event_req, uvfs_updates, dir_name, UV_FS_EVENT_RECURSIVE);
-  // The recursive flag watches subdirectories too.
-  //uv_fs_event_init(loop,fs_event_req, dir_name,uvfs_updates, UV_FS_EVENT_RECURSIVE);
-
 }
+
+#elif UV_VERSION_MAJOR == 0
+
+// using ABI for libuv 0.x
+void fs_add_watch(char* dir_name){
+  // The recursive flag watches subdirectories too.
+  uv_fs_event_t *fs_event_req = malloc(sizeof(uv_fs_event_t));
+  fs_event_req->data = strdup(dir_name); 
+  uv_fs_event_init(loop,fs_event_req, dir_name,uvfs_updates, UV_FS_EVENT_RECURSIVE);
+}
+
+#else
+#error "Unsupported version for libuv: v" #UV_VERSION_MAJOR ".x"
+#endif
 
 void sync_listen(int (*cb)( const char*,int)){
   uv_run(loop, UV_RUN_DEFAULT);
 }
-
 
 void local_unload(){
 

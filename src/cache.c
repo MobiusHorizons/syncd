@@ -93,6 +93,8 @@ void cache_clear(){
     close(cacheFD);
 		json_object_put(config);
 	  json_object_put(cache);
+    config = NULL;
+    cache = NULL;
     syncd_lock_delete(cache_lock );
     syncd_lock_delete(config_lock);
 }
@@ -210,7 +212,11 @@ void update_cache(){
 }
 
 void update_config(){
-    if (config != NULL) json_object_put(config);
+    if (config != NULL) {
+        logging_log(LOGARGS,"%s\n",json_object_to_json_string_ext(config, JSON_C_TO_STRING_PRETTY));
+        json_object_put(config);
+        config = NULL;
+    }
     char path[PATH_MAX];
     strcpy(path,getenv("HOME"));
     strcat(path,"/.config/syncd/config.json");

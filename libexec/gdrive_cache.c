@@ -1,4 +1,5 @@
 #define  _XOPEN_SOURCE 500
+#include <deps/strdup/strdup.h>
 #include <time.h>
 #include "gdrive_cache.h"
 #include "gdrive.h"
@@ -25,11 +26,6 @@ void gdrive_cache_init(utilities u){
 
 void gdrive_cache_set_args(init_args a){
   args = a;
-}
-
-char * safe_strdup(const char * value){
-    if (value == NULL) return NULL;
-    return strdup(value);
 }
 
 json_object * get_metadata(const char* id, const char* path){
@@ -109,7 +105,7 @@ json_object * update_metadata( const char * id, json_object * gdrive_meta){
   const char * modified_s = json_get_string(gdrive_meta, "modifiedDate");
   if (modified_s != NULL){
     char * mtime = strdup(modified_s);
-  	time_t modified = time(0);
+    time_t modified;
     struct tm mod;
     memset(&mod, 0, sizeof(struct tm));
     // time in format 2015-02-12T17:40:31.492Z
@@ -153,6 +149,7 @@ char * normalize_path(const char * path, bool is_dir){
     if (is_dir) strcat(clean_path, "/");
 
     free(local_path);
+    free(parent_path);
     free(fname);
     return clean_path;
 }
@@ -174,10 +171,11 @@ char * get_path(const char * id){
 			json_object_put(file);
 			return strdup("/");
 		}
-    char * parent_id = safe_strdup(json_get_string(file, "parentID"));
-    char * title = safe_strdup(json_get_string(file, "title"));
+    char * parent_id = strdup(json_get_string(file, "parentID"));
+    char * title = strdup(json_get_string(file, "title"));
     if (title == NULL){
 			json_object_put(file);
+            free(parent_id);
 			return NULL;
 		}
     bool is_dir = json_get_bool(file, "is_dir", false);
@@ -187,6 +185,7 @@ char * get_path(const char * id){
 
     if (path == NULL) {
 			json_object_put(file);
+            free(title);
 			return NULL; // deleted
 		}
 
@@ -200,7 +199,7 @@ char * get_path(const char * id){
     json_object_put(file);
     return path;
   }
-  char * path = safe_strdup(json_get_string(file, "path"));
+  char * path = strdup(json_get_string(file, "path"));
   json_object_put(file);
   return path;
 }
@@ -213,7 +212,7 @@ char * get_child_id(char * parentId, char * fname){
 	json_object * files;
 	if (json_object_object_get_ex(dir_info, "items", &files)){
 		json_object * file = json_object_array_get_idx(files,0);
-		id = safe_strdup(json_get_string(file, "id"));
+		id = strdup(json_get_string(file, "id"));
 	}
 	json_object_put(dir_info);
 	return id;

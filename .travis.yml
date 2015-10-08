@@ -1,21 +1,26 @@
 language: c
-
 sudo: false
+os: 
+  - linux
+  - osx
 
 cache:
-  directories: $HOME/jsonc
+  directories: 
+    - $HOME/jsonc_linux
+    - $HOME/jsonc_osx 
 
 compiler:
   - gcc
   - clang
 
 install:
-  - sh ./install_jsonc.sh
+  - sh ./install_jsonc_$TRAVIS_OS_NAME.sh
+  - sh ./install_libuv_$TRAVIS_OS_NAME.sh  
 
 script:
-  - ls -r $HOME/jsonc
-  - export INCLUDE="$HOME/jsonc/include"
-  - export LIB="$HOME/jsonc/lib"
+  - ls -r $HOME/jsonc_$TRAVIS_OS_NAME
+  - export INCLUDE="$HOME/jsonc_$TRAVIS_OS_NAME/include"
+  - export LIB="$HOME/jsonc_$TRAVIS_OS_NAME/lib"
   - export CFLAGS="$CFLAGS -fPIC"
   - mkdir -p build
   - cd build

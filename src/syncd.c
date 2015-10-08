@@ -76,13 +76,19 @@ json_object * rules;
 	}
 #endif
 #if defined(__APPLE__) && defined(__MACH__)
+	#include <errno.h>
+	#include <string.h>
 	int pseudo_fork(int plugin_num, char* exec_name){
 		char pnum[10];
 		sprintf(pnum,"%d",plugin_num);
 		int pid = fork();
-		logging_stdout ("Spawning process with PID %d\n", pid);
+		if (pid != 0) logging_stdout ("Spawning process with PID %d\n", pid);
 		if (pid != 0) return pid;
-		execl(exec_name, exec_name, "-p", pnum, NULL);
+		int result = execlp(exec_name, exec_name, "-p", pnum, NULL);
+		if (result == -1){
+			logging_stderr ("execl failed: %s\n", strerror(errno));
+			return -1;
+		}
 		return 0;
 	}
 	#define fork() pseudo_fork(i,argv[0])
@@ -116,6 +122,7 @@ int get_sync_paths(char *** paths, const char *updated){
 			}
 		}
 	}
+    if (r_paths_length == 0) return 0;
 	char ** container = malloc(r_paths_length * sizeof(char*));
 	for(i = 0; i < r_paths_length; i++){
 		container[i] = strdup(
@@ -148,7 +155,7 @@ int cb(const char * path, int mask){
 		}
 		logging_log(LOGARGS,"file %s changed, mask was %.4x\n",path,mask);
 		int i;
-		char ** sync_path;
+		char ** sync_path = NULL;
 		int po = get_plugin(path);
 
 		json_object * orig_cache;
@@ -214,6 +221,10 @@ int cb(const char * path, int mask){
 				}
 			}
 			if (mask & S_MOVED_TO){
+                if (moved_from == NULL){
+                    logging_log(LOGARGS, "got MOVED_TO without MOVED_FROM, ignoring.\n");
+                    continue;
+                }
 				S_MV sync_mv = (S_MV) lt_dlsym(plugins[pd].ptr,"sync_mv");
 				logging_log(LOGARGS,"moved file %s to %s, returned %d\n",moved_from[i],sync_path[i],sync_mv(moved_from[i],sync_path[i]));
 			}
@@ -264,7 +275,7 @@ int loadPlugins(Plugin **return_plugins){
 	args.log = logging_log;
 	args.printf = logging_stdout;
 	args.error = logging_stderr;
-	int num_plugins = 0, i=0;
+    int num_plugins = 0;
 	DIR * dp;
 	struct dirent *ep;
   logging_log(LOGARGS,"looking for plugins in %s\n", LIBDIR );
@@ -334,13 +345,23 @@ void setupConfig(){
 	// Create the directories if needed.
 	char path [PATH_MAX];
 	strcpy(path, getenv("HOME"));
-	strcat(path, "/.config/syncd");
+	
+	strcat(path, "/.config");
 	c_mkdir(path,0700);
+	
+	strcat(path, "/syncd");
+	c_mkdir(path,0700);
+	
 	strcat(path,"/log.txt");
 	logging_init(path);
+
 	strcpy(path, getenv("HOME"));
-	strcat(path, "/.cache/syncd");
+	strcat(path, "/.cache");
 	c_mkdir(path,0700);
+
+	strcat(path, "/syncd");
+	c_mkdir(path,0700);
+
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/.config/syncd/rules.json");
 	rules = json_object_from_file(path);
@@ -365,7 +386,7 @@ int main(int argc, char** argv){
 			}
 		}
 	}
-  char path[PATH_MAX];
+
 	// init shared memory
 	setupConfig();
 	logging_log(LOGARGS,"plugin_to_run = %d\n",plugin_to_run);

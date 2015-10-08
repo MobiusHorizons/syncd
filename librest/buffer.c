@@ -53,7 +53,7 @@ buffer buffer_append(buffer b, char* data, size_t length){
 int buffer_read(buffer *b, char *data, size_t length){
 	length = (length > b->size)? b->size: length;
 	size_t  newLength =  b->size - length;
-	char * ptr =memcpy(data,b->data,length);
+	memcpy(data,b->data,length);
 	char * shorter = malloc(newLength+1);
 	memcpy(shorter,b->data + length,newLength);
 	free(b->data);

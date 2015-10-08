@@ -11,6 +11,8 @@ FIND_PATH(UV_INCLUDE_DIR uv.h
   "$ENV{LIB_DIR}/include"
   /usr/local/include
   /usr/include
+  #homebrew on macs
+  /usr/local/opt/libuv/include
   #mingw
   c:/msys/include
   /usr/x86_64-w64-mingw32/include
@@ -26,6 +28,7 @@ FIND_LIBRARY(UV_LIBRARY NAMES uv libuv PATHS
   "$ENV{LIB_DIR}/lib"
   /usr/local/lib
   /usr/lib
+  /usr/local/opt/libuv/lib
   c:/msys/lib
   c:/msys/bin
   /usr/x86_64-w64-mingw32/lib

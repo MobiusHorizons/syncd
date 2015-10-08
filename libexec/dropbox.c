@@ -20,6 +20,7 @@
 */
 
 #include "dropbox.h"
+#include <deps/strdup/strdup.h>
 #include <config.h>
 /* globals */
 char * client_key    = "gmq6fs74fuw1ead";
@@ -49,14 +50,6 @@ bool JSON_GET_BOOL(json_object * obj, char * object, bool def){
     return json_object_get_boolean(obj);
   }
   return def;
-}
-
-char * safe_strdup(const char * str){
-  if (str != NULL){
-    return strdup(str);
-  } else {
-    return NULL;
-  }
 }
 
 void update_cache(json_object * entry,const char *fname){
@@ -119,7 +112,7 @@ const char * init(init_args a){
   if (config == NULL){
     config = json_object_get(json_object_new_object());
   }
-  access_token = safe_strdup(json_get_string(config, "access_token"));
+  access_token = strdup(json_get_string(config, "access_token"));
   //FILE * state = fopen("access_token.txt", "r");
   if (access_token == NULL){
     char token[128];
@@ -186,6 +179,7 @@ void sync_listen(int (*cb)(const char*,int)){
 
           free(cursor);
           cursor = NULL;
+          has_more = false;
           continue;
         }
       }
@@ -196,6 +190,7 @@ void sync_listen(int (*cb)(const char*,int)){
 				json_object_put(delta);
         free(cursor);
         cursor=NULL;
+          has_more = false;
         continue;
       }
 
@@ -268,7 +263,7 @@ void do_poll(int interval){
 }
 
 
-void watch_dir(const char* path){
+void sync_watch_dir(const char* path){
   args.log(LOGARGS,"i am supposed to be monitoring directory %s\n",path);
 }
 
