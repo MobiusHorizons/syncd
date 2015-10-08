@@ -18,10 +18,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+#ifdef __APPLE__
+	#include <stdio.h>
+#endif
+#include "syncfs.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "syncfs.h"
 
 FILE ** open_files;
 int num_open_files;
