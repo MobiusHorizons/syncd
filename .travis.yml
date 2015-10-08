@@ -5,7 +5,9 @@ os:
   - osx
 
 cache:
-  directories: $HOME/jsonc
+  directories: 
+    - $HOME/jsonc_linux
+    - $HOME/jsonc_osx 
 
 compiler:
   - gcc
@@ -16,7 +18,7 @@ install:
   - sh ./install_libuv_$TRAVIS_OS_NAME.sh  
 
 script:
-  - ls -r $HOME/jsonc
+  - ls -r $HOME/jsonc_$TRAVIS_OS_NAME
   - export INCLUDE="$HOME/jsonc/include"
   - export LIB="$HOME/jsonc/lib"
   - export CFLAGS="$CFLAGS -fPIC"
