@@ -2,7 +2,7 @@ language: c
 sudo: false
 os: 
   - linux
-  - osx  
+  - osx
 
 cache:
   directories: $HOME/jsonc
@@ -11,12 +11,9 @@ compiler:
   - gcc
   - clang
 
-before_install:
-  - brew update
-  - brew outdated libuv || brew upgrade libuv
-
 install:
   - sh ./install_jsonc_$TRAVIS_OS_NAME.sh
+  - sh ./install_libuv_$TRAVIS_OS_NAME.sh  
 
 script:
   - ls -r $HOME/jsonc
