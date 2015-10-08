@@ -21,7 +21,6 @@
 
 #include "syncfs.h"
 #include <deps/strdup/strdup.h>
-#include <uv-version.h>
 #include <uv.h>
 
 uv_loop_t *loop;
