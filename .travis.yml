@@ -19,8 +19,8 @@ install:
 
 script:
   - ls -r $HOME/jsonc_$TRAVIS_OS_NAME
-  - export INCLUDE="$HOME/jsonc/include"
-  - export LIB="$HOME/jsonc/lib"
+  - export INCLUDE="$HOME/jsonc_$TRAVIS_OS_NAME/include"
+  - export LIB="$HOME/jsonc_$TRAVIS_OS_NAME/lib"
   - export CFLAGS="$CFLAGS -fPIC"
   - mkdir -p build
   - cd build
