@@ -1,5 +1,8 @@
 language: c
 
+os: 
+        - linux
+        - osx  
 sudo: false
 
 cache:
@@ -10,7 +13,7 @@ compiler:
   - clang
 
 install:
-  - sh ./install_jsonc.sh
+  - sh ./install_jsonc_$TRAVIS_OS_NAME.sh
 
 script:
   - ls -r $HOME/jsonc
